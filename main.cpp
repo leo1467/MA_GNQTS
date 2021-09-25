@@ -15,7 +15,7 @@ string _testStartYear = "2012";
 string _testEndYear = "2021";
 int _testYearLength = stod(_testEndYear) - stod(_testStartYear);
 string _slidingWindows[] = {"YY2Y", "YH2Y", "Y2Y", "Y2H", "Y2Q", "Y2M", "H#", "H2H", "H2Q", "H2M", "Q#", "Q2Q", "Q2M", "M#", "M2M", "A2A", "10D5"};
-string _slidingWindowsEX[] = {"24M12", "18M12", "12M12", "12M6", "12M3", "12M1", "H#", "6M6", "6M3", "6M1", "Q#", "3M3", "3M1", "M#", "1M1", "A2A", "10D5"};
+string _slidingWindowsEX[] = {"24M12", "18M12", "12M12", "12M6", "12M3", "12M1", "6M", "6M6", "6M3", "6M1", "3M", "3M3", "3M1", "1M", "1M1", "A2A", "10D5"};
 int _MAType = 0;
 
 vector<vector<string> > read_data(path);
@@ -41,9 +41,9 @@ class CompanyInfo {
     void cal_MA(string);
     void train();
     void find_train_interval();
-    void find_train_start_row(int);
-    void find_train_start_end(int, int, int, int);
-    vector<string> find_train_type(string, char, char);
+    void find_train_start_row(int, char);
+    void find_train_start_end(vector<string>, char);
+    vector<string> find_train_type(string, char &);
     void ini_MATable();
     void output_MA(path, int);
     void find_cross(int, int);
@@ -97,8 +97,7 @@ void CompanyInfo::cal_MA(string MAType) {
                     for (int i = dateRow, j = MA; j > 0; i--, j--) {
                         MARangePriceSum += price[i];
                     }
-                    out << fixed << setprecision(8) << date[dateRow] + ","
-                        << MARangePriceSum / MA << endl;
+                    out << fixed << setprecision(8) << date[dateRow] + "," << MARangePriceSum / MA << endl;
                 }
                 out.close();
             }
@@ -124,67 +123,20 @@ void CompanyInfo::cal_MA(string MAType) {
 }
 
 void CompanyInfo::train() {
-    find_train_interval();
 }
 
 void CompanyInfo::find_train_interval() {
-    trainInterval.resize(sizeof(_slidingWindows) / sizeof(_slidingWindows[0]));
     for (int windowsIndex = 0; windowsIndex < sizeof(_slidingWindows) / sizeof(_slidingWindows[0]); windowsIndex++) {
-        if (_slidingWindows[windowsIndex] == "YY2Y") {
-            find_train_start_end(24, _testYearLength, 12, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "YH2Y") {
-            find_train_start_end(18, _testYearLength, 12, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "Y2Y") {
-            find_train_start_end(12, _testYearLength, 12, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "Y2H") {
-            find_train_start_end(12, _testYearLength * 2, 6, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "Y2Q") {
-            find_train_start_end(12, _testYearLength * 4, 3, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "Y2M") {
-            find_train_start_end(12, _testYearLength * 12, 1, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "H#") {
-            find_train_start_end(6, _testYearLength * 2, 6, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "H2H") {
-            find_train_start_end(6, _testYearLength * 2, 6, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "H2Q") {
-            find_train_start_end(6, _testYearLength * 4, 3, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "H2M") {
-            find_train_start_end(6, _testYearLength * 12, 1, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "Q#") {
-            find_train_start_end(3, _testYearLength * 4, 3, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "Q2Q") {
-            find_train_start_end(3, _testYearLength * 4, 3, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "Q2M") {
-            find_train_start_end(3, _testYearLength * 12, 1, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "M#") {
-            find_train_start_end(1, _testYearLength * 12, 1, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "M2M") {
-            find_train_start_end(1, _testYearLength * 12, 1, windowsIndex);
-        }
-        else if (_slidingWindows[windowsIndex] == "A2A") {
-            trainInterval[windowsIndex].push_back(testStartRow);
-            trainInterval[windowsIndex].push_back(testEndRow);
-        }
-        else if (isnumber(_slidingWindows[windowsIndex][0])) {
-            find_train_start_end(-1, -1, -1, windowsIndex);
+        char delimiter;
+        vector<string> trainType = find_train_type(_slidingWindowsEX[windowsIndex], delimiter);
+        if (_slidingWindows[windowsIndex] == "A2A") {
+            vector<int> tmp;
+            tmp.push_back(testStartRow);
+            tmp.push_back(testEndRow);
+            trainInterval.push_back(tmp);
         }
         else {
-            cout << _slidingWindows[windowsIndex] + " is not defined" << endl;
-            exit(0);
+            find_train_start_end(trainType, delimiter);
         }
         cout << _slidingWindows[windowsIndex] << endl;
         for (int i = 0; i < trainInterval[windowsIndex].size(); i += 2) {
@@ -193,17 +145,23 @@ void CompanyInfo::find_train_interval() {
     }
 }
 
-void CompanyInfo::find_train_start_row(int trainPeriodLength) {
+void CompanyInfo::find_train_start_row(int trainPeriodLength, char delimiter) {
     trainStartRow = -1;
     trainEndRow = -1;
-    for (int i = testStartRow - 1, monthCount = 0; i >= 0; i--) {
-        if (date[i].substr(5, 2) != date[i - 1].substr(5, 2)) {
-            monthCount++;
-            if (monthCount == trainPeriodLength) {
-                trainStartRow = i;
-                break;
+    if (delimiter == 'M') {
+        for (int i = testStartRow - 1, monthCount = 0; i >= 0; i--) {
+            if (date[i].substr(5, 2) != date[i - 1].substr(5, 2)) {
+                monthCount++;
+                if (monthCount == trainPeriodLength) {
+                    trainStartRow = i;
+                    break;
+                }
             }
         }
+    }
+    else if (delimiter == 'D') {
+        trainStartRow = testStartRow - trainPeriodLength;
+        trainEndRow = testStartRow - 1;
     }
     if (trainStartRow == -1) {
         cout << companyName + " can not find trainStartRow " << trainPeriodLength << endl;
@@ -211,16 +169,26 @@ void CompanyInfo::find_train_start_row(int trainPeriodLength) {
     }
 }
 
-void CompanyInfo::find_train_start_end(int trainPeriodLength, int intervalNum, int testPeriodLength, int windowsIndex) {
+void CompanyInfo::find_train_start_end(vector<string> trainType, char delimiter) {
     vector<int> startRow;
     vector<int> endRow;
-    if (isalpha(_slidingWindows[windowsIndex][0])) {
-        if (_slidingWindows[windowsIndex].length() != 2) {
-            find_train_start_row(trainPeriodLength);
-        }
-        else {
-            find_train_start_row(12);
-        }
+    vector<int> allRow;
+    int trainPeriodLength = stoi(trainType[0]);
+    int intervalNum = -1;
+    int testPeriodLength = -1;
+    //=======================================找出訓練期開始Row
+    if (trainType.size() == 2) {
+        find_train_start_row(trainPeriodLength, delimiter);
+        intervalNum = _testYearLength * (12 / stoi(trainType[1]));
+        testPeriodLength = stoi(trainType[1]);
+    }
+    else if (trainType.size() == 1) {
+        find_train_start_row(12, delimiter);
+        intervalNum = _testYearLength * (12 / stoi(trainType[0]));
+        testPeriodLength = stoi(trainType[0]);
+    }
+    //=======================================找出所有訓練區間
+    if (delimiter == 'M') {
         startRow.push_back(trainStartRow);
         for (int i = trainStartRow, intervalCount = 1, monthCount = 0; intervalCount < intervalNum; i++) {
             if (date[i].substr(5, 2) != date[i + 1].substr(5, 2)) {
@@ -232,11 +200,11 @@ void CompanyInfo::find_train_start_end(int trainPeriodLength, int intervalNum, i
                 }
             }
         }
-        if (_slidingWindows[windowsIndex].length() != 2) {
+        if (trainType.size() == 2) {
             endRow.push_back(testStartRow - 1);
             trainEndRow = testStartRow;
         }
-        else {
+        else if (trainType.size() == 1) {
             for (int i = trainStartRow, monthCount = 0; i < totalDays; i++) {
                 if (date[i].substr(5, 2) != date[i + 1].substr(5, 2)) {
                     monthCount++;
@@ -258,44 +226,37 @@ void CompanyInfo::find_train_start_end(int trainPeriodLength, int intervalNum, i
                 }
             }
         }
-        for (int i = 0; i < intervalNum; i++) {
-            trainInterval[windowsIndex].push_back(startRow[i]);
-            trainInterval[windowsIndex].push_back(endRow[i]);
-        }
     }
-    else {
-        trainPeriodLength = stoi(find_train_type(_slidingWindows[windowsIndex], 'D', '!')[0]);
-        testPeriodLength = stoi(find_train_type(_slidingWindows[windowsIndex], 'D', '!')[1]);
-        trainStartRow = testStartRow - trainPeriodLength;
-        trainEndRow = testStartRow - 1;
+    else if (delimiter == 'D') {
         for (int i = trainStartRow; i <= testEndRow - trainPeriodLength; i += testPeriodLength) {
             startRow.push_back(i);
         }
         for (int i = trainEndRow; i < testEndRow; i += testPeriodLength) {
             endRow.push_back(i);
         }
-        for (int i = 0; i < startRow.size(); i++) {
-            trainInterval[windowsIndex].push_back(startRow[i]);
-            trainInterval[windowsIndex].push_back(endRow[i]);
-        }
     }
+    for (int i = 0; i < startRow.size(); i++) {
+        allRow.push_back(startRow[i]);
+        allRow.push_back(endRow[i]);
+    }
+    //=======================================
+    trainInterval.push_back(allRow);
 }
 
-vector<string> CompanyInfo::find_train_type(string inputString, char delimiter1, char delimiter2) {
+vector<string> CompanyInfo::find_train_type(string window, char &delimiter) {
+    for (int i = 0; i < window.length(); i++) {
+        if (isalpha(window[i])) {
+            delimiter = window[i];
+            break;
+        }
+    }
     string segment;
-    vector<string> seglist;
-    stringstream toCut(inputString);
-    char delimiter;
-    if (inputString.back() == delimiter2) {
-        delimiter = delimiter2;
-    }
-    else {
-        delimiter = delimiter1;
-    }
+    vector<string> segmentList;
+    stringstream toCut(window);
     while (getline(toCut, segment, delimiter)) {
-        seglist.push_back(segment);
+        segmentList.push_back(segment);
     }
-    return seglist;
+    return segmentList;
 }
 
 void CompanyInfo::ini_MATable() {
@@ -393,7 +354,7 @@ int main(int argc, const char *argv[]) {
     for (int companyIndex = 0; companyIndex < 1; companyIndex++) {
         CompanyInfo company(companyPricePath[companyIndex], MAType[_MAType]);
         //        company.cal_MA(MAType[_MAType]);
-        company.train();
+        company.find_train_interval();
     }
     return 0;
 }
