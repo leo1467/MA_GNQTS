@@ -23,11 +23,20 @@ vector<path> get_path(path);
 
 class CompanyInfo {
 public:
+    class MATable {
+    public:
+        int trainDays;
+        string *date;
+        double *price;
+        double **MAValues;
+        ~MATable();
+    };
     string companyName;
     string MAType;
     string *date;
     double *price;
     int totalDays;
+//    int trainDays;
     string MAOutputPath;
     int testStartRow;
     int testEndRow;
@@ -43,8 +52,8 @@ public:
     void find_train_start_row(int, char);
     void find_train_start_end(vector<string>, char);
     vector<string> find_train_type(string, char &);
-    void create_MATable();
-    void output_MA(path, int);
+    MATable create_MATable();
+//    void output_MA(path, int);
     void find_cross(int, int);
     CompanyInfo(path filePath, string MAType) {
         companyName = filePath.stem().string();
@@ -53,13 +62,6 @@ public:
         MAOutputPath = create_folder();
     }
     ~CompanyInfo();
-    class MATable {
-    public:
-        int trainDays;
-        string *date;
-        double **MAValues;
-        ~MATable();
-    };
 };
 
 string CompanyInfo::create_folder() {
@@ -260,39 +262,45 @@ vector<string> CompanyInfo::find_train_type(string window, char &delimiter) {
     return segmentList;
 }
 
-void CompanyInfo::create_MATable() {
-    int longestTrainRow = INT_MAX;
-    for (int i = 0; i < trainInterval.size(); i++) {
-        if (trainInterval[i][0] < longestTrainRow) {
-            longestTrainRow = trainInterval[i][0];
+CompanyInfo::MATable CompanyInfo::create_MATable() {
+    int longestTrainMonth = 0;
+    for (int i = 0; i < sizeof(_slidingWindowsEX) / sizeof(_slidingWindowsEX[0]); i++) {
+        char delimiter;
+        vector<string> tmp = find_train_type(_slidingWindowsEX[i], delimiter);
+        if (delimiter == 'M' && stoi(tmp[0]) > longestTrainMonth) {
+            longestTrainMonth = stoi(tmp[0]);
         }
     }
-    MATable MATable;
-    MATable.trainDays = totalDays - longestTrainRow;
-    MATable.date = new string[MATable.trainDays];
-    for (int i = longestTrainRow, j = 0; i < totalDays; i++, j++) {
-        MATable.date[j] = date[i];
+    find_train_start_row(longestTrainMonth, 'M');
+    MATable table;
+    table.trainDays = totalDays - trainStartRow;
+    table.date = new string[table.trainDays];
+    table.price = new double[table.trainDays];
+    for (int i = trainStartRow, j = 0; i < totalDays; i++, j++) {
+        table.date[j] = date[i];
+        table.price[j] = price[i];
     }
-    MATable.MAValues = new double*[MATable.trainDays];
-    for(int i = 0; i < MATable.trainDays; i++) {
-        MATable.MAValues[i] = new double[257];
+    table.MAValues = new double*[table.trainDays];
+    for(int i = 0; i < table.trainDays; i++) {
+        table.MAValues[i] = new double[257];
     }
     vector<path> MAFilePath = get_path(MAType + "/" + companyName);
     for(int i = 0; i < MAFilePath.size(); i++) {
         vector<vector<string> > MAFile = read_data(MAFilePath[i]);
-        for (int j = 0, k = int(MAFile.size()) - MATable.trainDays; k < MAFile.size(); j++, k++) {
-            MATable.MAValues[j][i + 1] = stod(MAFile[k][1]);
+        for (int j = 0, k = int(MAFile.size()) - table.trainDays; k < MAFile.size(); j++, k++) {
+            table.MAValues[j][i + 1] = stod(MAFile[k][1]);
         }
     }
 //    ofstream out;
 //    out.open("testTable.csv");
-//    for(int i = 0; i < MATable.trainDays; i++) {
-//        out << MATable.date[i] + ",";
+//    for(int i = 0; i < table.trainDays; i++) {
+//        out << table.date[i] + ",";
 //        for(int j = 1; j < 257; j++) {
-//            out << MATable.MAValues[i][j] << ",";
+//            out << table.MAValues[i][j] << ",";
 //        }
 //        out << endl;
 //    }
+    return table;
 }
 
 //void CompanyInfo::output_MA(path filePath, int MAType) {
@@ -382,8 +390,8 @@ int main(int argc, const char *argv[]) {
     for (int companyIndex = 0; companyIndex < 1; companyIndex++) {
         CompanyInfo company(companyPricePath[companyIndex], MAType[_MAType]);
 //        company.cal_MA();
-        company.find_train_interval();
-        company.create_MATable();
+//        company.find_train_interval();
+        CompanyInfo::MATable table = company.create_MATable();
     }
     return 0;
 }
