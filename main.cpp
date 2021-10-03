@@ -16,7 +16,7 @@ string _testEndYear = "2021";
 int _testYearLength = stod(_testEndYear) - stod(_testStartYear);
 string _slidingWindows[] = {"YY2Y", "YH2Y", "Y2Y", "Y2H", "Y2Q", "Y2M", "H#", "H2H", "H2Q", "H2M", "Q#", "Q2Q", "Q2M", "M#", "M2M", "A2A", "10D5"};
 string _slidingWindowsEX[] = {"24M12", "18M12", "12M12", "12M6", "12M3", "12M1", "6M", "6M6", "6M3", "6M1", "3M", "3M3", "3M1", "1M", "1M1", "A2A", "10D5"};
-int _MAType = 0;
+int _MAUse = 0;
 
 vector<vector<string> > read_data(path);
 vector<path> get_path(path);
@@ -56,6 +56,7 @@ public:
     void find_train_start_end(vector<string>, char);
     vector<string> find_train_type(string, char &);
     MATable create_MATable();
+    void outputMATable(CompanyInfo::MATable);
     void find_cross(int, int);
     CompanyInfo(path filePath, string MAUse) {
         companyName = filePath.stem().string();
@@ -270,9 +271,9 @@ CompanyInfo::MATable CompanyInfo::create_MATable() {
     int longestTrainMonth = 0;
     for (int i = 0; i < sizeof(_slidingWindowsEX) / sizeof(_slidingWindowsEX[0]); i++) {
         char delimiter;
-        vector<string> tmp = find_train_type(_slidingWindowsEX[i], delimiter);
-        if (delimiter == 'M' && stoi(tmp[0]) > longestTrainMonth) {
-            longestTrainMonth = stoi(tmp[0]);
+        string trainMonth = find_train_type(_slidingWindowsEX[i], delimiter)[0];
+        if (delimiter == 'M' && stoi(trainMonth) > longestTrainMonth) {
+            longestTrainMonth = stoi(trainMonth);
         }
     }
     find_train_start_row(longestTrainMonth, 'M');
@@ -291,21 +292,28 @@ CompanyInfo::MATable CompanyInfo::create_MATable() {
     vector<path> MAFilePath = get_path(MAType + "/" + companyName);
     for(int i = 0; i < MAFilePath.size(); i++) {
         vector<vector<string> > MAFile = read_data(MAFilePath[i]);
+        if (int(MAFile.size()) - table.trainDays < 0) {
+            cout << companyName + " MA file not old enougth" << endl;
+            exit(1);
+        }
         for (int j = 0, k = int(MAFile.size()) - table.trainDays; k < MAFile.size(); j++, k++) {
             table.MAValues[j][i + 1] = stod(MAFile[k][1]);
         }
     }
-//    ofstream out;
-//    out.open("testTable.csv");
-//    for(int i = 0; i < table.trainDays; i++) {
-//        out << table.date[i] + ",";
-//        for(int j = 1; j < 257; j++) {
-//            out << table.MAValues[i][j] << ",";
-//        }
-//        out << endl;
-//    }
-//    out.close();
     return table;
+}
+
+void CompanyInfo::outputMATable(CompanyInfo::MATable table) {
+    ofstream out;
+    out.open(companyName + "_MATable.csv");
+    for (int i = 0; i < table.trainDays; i++) {
+        out << table.date[i] + ",";
+        for (int j = 1; j < 257; j++) {
+            out << table.MAValues[i][j] << ",";
+        }
+        out << endl;
+    }
+    out.close();
 }
 
 CompanyInfo::~CompanyInfo() {
@@ -357,10 +365,10 @@ vector<path> get_path(path targetPath) {
 }
 
 int main(int argc, const char *argv[]) {
-    string MAType[] = {"SMA", "WMA", "EMA"};
+    string MAUse[] = {"SMA", "WMA", "EMA"};
     vector<path> companyPricePath = get_path(_pricePath);
     for (int companyIndex = 0; companyIndex < 1; companyIndex++) {
-        CompanyInfo company(companyPricePath[companyIndex], MAType[_MAType]);
+        CompanyInfo company(companyPricePath[companyIndex], MAUse[_MAUse]);
         //        company.cal_MA();
         company.train();
     }
