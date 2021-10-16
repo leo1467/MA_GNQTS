@@ -9,6 +9,13 @@
 using namespace std;
 using namespace std::filesystem;
 
+#define PARTICAL_AMOUNT 10
+#define TOTAL_CP_LV 10000000.0
+#define BUY_BIT1 7
+#define BUY_BIT2 7
+#define SELL_BIT1 7
+#define SELL_BIT2 7
+
 path _pricePath = "price";
 int _closeCol = 4;
 string _testStartYear = "2012";
@@ -16,7 +23,14 @@ string _testEndYear = "2021";
 int _testYearLength = stod(_testEndYear) - stod(_testStartYear);
 string _slidingWindows[] = {"YY2Y", "YH2Y", "Y2Y", "Y2H", "Y2Q", "Y2M", "H#", "H2H", "H2Q", "H2M", "Q#", "Q2Q", "Q2M", "M#", "M2M", "A2A", "10D5"};
 string _slidingWindowsEX[] = {"24M12", "18M12", "12M12", "12M6", "12M3", "12M1", "6M", "6M6", "6M3", "6M1", "3M", "3M3", "3M1", "1M", "1M1", "A2A", "10D5"};
+int _windowNumber = sizeof(_slidingWindows) / sizeof(_slidingWindows[0]); //暫放
 int _MAUse = 0;
+
+double _delta = 0.003;
+int _expNumber = 1;
+int _generationNumber = 1;
+
+string _outputPath = "result";
 
 vector<vector<string> > read_data(path);
 vector<path> get_path(path);
@@ -29,11 +43,19 @@ public:
         string *date;
         double *price;
         double **MAValues;
-        ~MATable();
+        ~MATable() {
+            delete[] date;
+            for (int i = 0; i < trainDays; i++) {
+                delete[] MAValues[i];
+            }
+            delete[] MAValues;
+        }
     };
-    class StartTrain {
+    class Window {
     public:
-        
+        string windowName_;
+        string windowNameEx_;
+        vector<int> interval_;
     };
     string companyName;
     string MAType;
@@ -45,6 +67,7 @@ public:
     int testEndRow;
     int trainStartRow;
     int trainEndRow;
+    int windowNumber_;
     vector<vector<int> > trainInterval;
     
     void store_date_price(path);
@@ -55,17 +78,222 @@ public:
     void find_train_start_row(int, char);
     void find_train_start_end(vector<string>, char);
     vector<string> find_train_type(string, char &);
+    vector<Window> create_sliding_windows_classes();
+    void print_train();
     MATable create_MATable();
-    void outputMATable(CompanyInfo::MATable);
+    void outputMATable();
     void find_cross(int, int);
     CompanyInfo(path filePath, string MAUse) {
         companyName = filePath.stem().string();
         store_date_price(filePath);
         MAType = MAUse;
         MAOutputPath = create_folder();
+        windowNumber_ = sizeof(_slidingWindows) / sizeof(_slidingWindows[0]);
     }
-    ~CompanyInfo();
+    ~CompanyInfo() {
+        delete[] date;
+        delete[] price;
+    }
 };
+
+class MAtrade {
+public:
+    MAtrade(int trainStartRow, int trainEndRow, CompanyInfo::MATable &table) {
+        
+    }
+};
+
+class MAParticle {
+public:
+    int buy1_bi[BUY_BIT1]{0};
+    int buy2_bi[BUY_BIT2]{0};
+    int sell1_bi[SELL_BIT1]{0};
+    int sell2_bi[SELL_BIT2]{0};
+    int buy1_dec{0};
+    int buy2_dec{0};
+    int sell1_dec{0};
+    int sell2_dec{0};
+    double rate_of_return{0};
+    
+    void initialize_particle();
+    MAParticle() {
+    }
+    ~MAParticle() {
+    }
+};
+
+void MAParticle::initialize_particle() {
+    for (int i = 0; i < BUY_BIT1; i++) {
+        buy1_bi[i] = 0;
+    }
+    for (int i = 0; i < BUY_BIT2; i++) {
+        buy2_bi[i] = 0;
+    }
+    for (int i = 0; i < SELL_BIT1; i++) {
+        sell1_bi[i] = 0;
+    }
+    for (int i = 0; i < SELL_BIT2; i++) {
+        sell1_bi[i] = 0;
+    }
+    buy1_dec = 0;
+    buy2_dec = 0;
+    sell1_dec = 0;
+    sell2_dec = 0;
+}
+
+class BetaMatrix {
+public:
+    double buy1[BUY_BIT1];
+    double buy2[BUY_BIT2];
+    double sell1[SELL_BIT1];
+    double sell2[SELL_BIT2];
+    
+    BetaMatrix() {
+        fill_n(buy1, BUY_BIT1, 0.5);
+        fill_n(buy2, BUY_BIT2, 0.5);
+        fill_n(sell1, SELL_BIT1, 0.5);
+        fill_n(sell2, SELL_BIT2, 0.5);
+    }
+    ~BetaMatrix() {
+    }
+};
+
+class GNQTS {
+public:
+    MAParticle particles_[PARTICAL_AMOUNT];
+    BetaMatrix betaMtrix_;
+    int generation_;
+    
+    void measure(MAParticle &);
+    void convert_bi_to_dec(MAParticle &);
+    void update_local();
+    void update_global();
+    void print_particle(MAParticle);
+    void print_betaMatrix();
+    GNQTS(int trainStartRow, int trainEndRow, CompanyInfo::MATable &table) : generation_(_generationNumber) {
+        for (int generation = 0; generation < generation_; generation++) {
+            for (int i = 0; i < PARTICAL_AMOUNT; i++) {
+                measure(particles_[i]);
+                convert_bi_to_dec(particles_[i]);
+                MAtrade trade(trainStartRow, trainEndRow, table);
+                update_local();
+            }
+            update_global();
+        }
+    }
+    GNQTS() {
+        
+    }
+    ~GNQTS() {
+    }
+};
+
+void GNQTS::measure(MAParticle &particle) {
+    double r;
+    for (int i = 0; i < BUY_BIT1; i++) {
+        r = rand();
+        r = r / (double)RAND_MAX;
+        if (r < betaMtrix_.buy1[i]) {
+            particle.buy1_bi[i] = 1;
+        }
+        else {
+            particle.buy1_bi[i] = 0;
+        }
+    }
+    for (int i = 0; i < BUY_BIT2; i++) {
+        r = rand();
+        r = r / (double)RAND_MAX;
+        if (r < betaMtrix_.buy2[i]) {
+            particle.buy2_bi[i] = 1;
+        }
+        else {
+            particle.buy2_bi[i] = 0;
+        }
+    }
+    for (int i = 0; i < SELL_BIT1; i++) {
+        r = rand();
+        r = r / (double)RAND_MAX;
+        if (r < betaMtrix_.sell1[i]) {
+            particle.sell1_bi[i] = 1;
+        }
+        else {
+            particle.sell1_bi[i] = 0;
+        }
+    }
+    for (int i = 0; i < SELL_BIT2; i++) {
+        r = rand();
+        r = r / (double)RAND_MAX;
+        if (r < betaMtrix_.sell2[i]) {
+            particle.sell2_bi[i] = 1;
+        }
+        else {
+            particle.sell2_bi[i] = 0;
+        }
+    }
+}
+
+void GNQTS::convert_bi_to_dec(MAParticle &particle) {
+    for (int i = 0, j = BUY_BIT1 - 1; i < BUY_BIT1; i++, j--) {
+        particle.buy1_dec += pow(2, j) * particle.buy1_bi[i];
+    }
+    for (int i = 0, j = BUY_BIT2 - 1; i < BUY_BIT2; i++, j--) {
+        particle.buy2_dec += pow(2, j) * particle.buy2_bi[i];
+    }
+    for (int i = 0, j = SELL_BIT1 - 1; i < SELL_BIT1; i++, j--) {
+        particle.sell1_dec += pow(2, j) * particle.sell1_bi[i];
+    }
+    for (int i = 0, j = SELL_BIT2 - 1; i < SELL_BIT2; i++, j--) {
+        particle.sell2_dec += pow(2, j) * particle.sell2_bi[i];
+    }
+}
+
+void GNQTS::update_local() {
+}
+
+void GNQTS::update_global() {
+}
+
+void GNQTS::print_particle(MAParticle particle) {
+    for (int j = 0; j < BUY_BIT1; j++) {
+        cout << particle.buy1_bi[j] << ",";
+    }
+    cout << "|";
+    for (int j = 0; j < BUY_BIT2; j++) {
+        cout << particle.buy2_bi[j] << ",";
+    }
+    cout << "|";
+    for (int j = 0; j < SELL_BIT1; j++) {
+        cout << particle.sell1_bi[j] << ",";
+    }
+    cout << "|";
+    for (int j = 0; j < SELL_BIT2; j++) {
+        cout << particle.sell2_bi[j] << ",";
+    }
+    cout << endl;
+    cout << particle.buy1_dec << ",";
+    cout << particle.buy2_dec << ",";
+    cout << particle.sell1_dec << ",";
+    cout << particle.sell2_dec << endl;
+}
+
+void GNQTS::print_betaMatrix() {
+    for (int i = 0; i < BUY_BIT1; i++) {
+        cout << betaMtrix_.buy1[i] << ",";
+    }
+    cout << "|";
+    for (int i = 0; i < BUY_BIT2; i++) {
+        cout << betaMtrix_.buy2[i] << ",";
+    }
+    cout << "|";
+    for (int i = 0; i < SELL_BIT1; i++) {
+        cout << betaMtrix_.sell1[i] << ",";
+    }
+    cout << "|";
+    for (int i = 0; i < SELL_BIT2; i++) {
+        cout << betaMtrix_.sell1[i] << ",";
+    }
+    cout << endl;
+}
 
 string CompanyInfo::create_folder() {
     create_directories(MAType + "/" + companyName);
@@ -130,11 +358,28 @@ void CompanyInfo::cal_MA() {
 
 void CompanyInfo::train() {
     find_train_interval();
-    MATable maTable =  create_MATable();
+    vector<Window> windowsInfo = create_sliding_windows_classes();
+    MATable table = create_MATable();
+    for (int i = 0; i < trainInterval.size(); i++) {
+        for (int j = 0; j < trainInterval[i].size(); j++) {
+            trainInterval[i][j] -= trainStartRow;
+        }
+    }
+    for (int windowIndex = 0; windowIndex < windowNumber_; windowIndex++) {
+        srand(343);
+        cout << _slidingWindows[windowIndex] << endl;
+        for (int intervalIndex = 0; intervalIndex < trainInterval[windowIndex].size(); intervalIndex += 2) {
+            cout << table.date[trainInterval[windowIndex][intervalIndex]] + "~" + table.date[trainInterval[windowIndex][intervalIndex + 1]] << endl;
+            for (int expCnt = 0; expCnt < _expNumber; expCnt++) {
+//                cout << "exp:" << expCnt << endl;
+                GNQTS runGNQTS(trainInterval[windowIndex][intervalIndex], trainInterval[windowIndex][intervalIndex + 1], table);
+            }
+        }
+    }
 }
 
 void CompanyInfo::find_train_interval() {
-    for (int windowsIndex = 0; windowsIndex < sizeof(_slidingWindows) / sizeof(_slidingWindows[0]); windowsIndex++) {
+    for (int windowsIndex = 0; windowsIndex < windowNumber_; windowsIndex++) {
         char delimiter;
         vector<string> trainType = find_train_type(_slidingWindowsEX[windowsIndex], delimiter);
         if (_slidingWindows[windowsIndex] == "A2A") {
@@ -146,10 +391,6 @@ void CompanyInfo::find_train_interval() {
         else {
             find_train_start_end(trainType, delimiter);
         }
-        //        cout << _slidingWindows[windowsIndex] << endl;
-        //        for (int i = 0; i < trainInterval[windowsIndex].size(); i += 2) {
-        //            cout << date[trainInterval[windowsIndex][i]] << "~" << date[trainInterval[windowsIndex][i + 1]] << endl;
-        //        }
     }
 }
 
@@ -267,9 +508,28 @@ vector<string> CompanyInfo::find_train_type(string window, char &delimiter) {
     return segmentList;
 }
 
+vector<CompanyInfo::Window> CompanyInfo::create_sliding_windows_classes() {
+    vector<Window> windowsInfo(windowNumber_);
+    for (int windowIndex = 0; windowIndex < windowNumber_; windowIndex++) {
+        windowsInfo[windowIndex].windowName_ = _slidingWindows[windowIndex];
+        windowsInfo[windowIndex].windowNameEx_ = _slidingWindowsEX[windowIndex];
+        windowsInfo[windowIndex].interval_ = trainInterval[windowIndex];
+    }
+    return windowsInfo;
+}
+
+void CompanyInfo::print_train() {
+    for (int windowsIndex = 0; windowsIndex < windowNumber_; windowsIndex++) {
+        cout << _slidingWindows[windowsIndex] << endl;
+        for (int i = 0; i < trainInterval[windowsIndex].size(); i += 2) {
+            cout << date[trainInterval[windowsIndex][i]] << "~" << date[trainInterval[windowsIndex][i + 1]] << endl;
+        }
+    }
+}
+
 CompanyInfo::MATable CompanyInfo::create_MATable() {
     int longestTrainMonth = 0;
-    for (int i = 0; i < sizeof(_slidingWindowsEX) / sizeof(_slidingWindowsEX[0]); i++) {
+    for (int i = 0; i < windowNumber_; i++) {
         char delimiter;
         string trainMonth = find_train_type(_slidingWindowsEX[i], delimiter)[0];
         if (delimiter == 'M' && stoi(trainMonth) > longestTrainMonth) {
@@ -285,12 +545,12 @@ CompanyInfo::MATable CompanyInfo::create_MATable() {
         table.date[j] = date[i];
         table.price[j] = price[i];
     }
-    table.MAValues = new double*[table.trainDays];
-    for(int i = 0; i < table.trainDays; i++) {
+    table.MAValues = new double *[table.trainDays];
+    for (int i = 0; i < table.trainDays; i++) {
         table.MAValues[i] = new double[257];
     }
     vector<path> MAFilePath = get_path(MAType + "/" + companyName);
-    for(int i = 0; i < MAFilePath.size(); i++) {
+    for (int i = 0; i < MAFilePath.size(); i++) {
         vector<vector<string> > MAFile = read_data(MAFilePath[i]);
         if (int(MAFile.size()) - table.trainDays < 0) {
             cout << companyName + " MA file not old enougth" << endl;
@@ -303,9 +563,10 @@ CompanyInfo::MATable CompanyInfo::create_MATable() {
     return table;
 }
 
-void CompanyInfo::outputMATable(CompanyInfo::MATable table) {
+void CompanyInfo::outputMATable() {
+    MATable table = create_MATable();
     ofstream out;
-    out.open(companyName + "_MATable.csv");
+    out.open(companyName + "_" + MAType + "Table.csv");
     for (int i = 0; i < table.trainDays; i++) {
         out << table.date[i] + ",";
         for (int j = 1; j < 257; j++) {
@@ -314,19 +575,6 @@ void CompanyInfo::outputMATable(CompanyInfo::MATable table) {
         out << endl;
     }
     out.close();
-}
-
-CompanyInfo::~CompanyInfo() {
-    delete[] date;
-    delete[] price;
-}
-
-CompanyInfo::MATable::~MATable() {
-    delete [] date;
-    for(int i = 0; i < trainDays; i++) {
-        delete [] MAValues[i];
-    }
-    delete [] MAValues;
 }
 
 vector<vector<string> > read_data(path filePath) {
@@ -370,7 +618,16 @@ int main(int argc, const char *argv[]) {
     for (int companyIndex = 0; companyIndex < 1; companyIndex++) {
         CompanyInfo company(companyPricePath[companyIndex], MAUse[_MAUse]);
         //        company.cal_MA();
-        company.train();
+//        company.train();
+        company.find_train_interval();
+        vector<CompanyInfo::Window> windowsInfo = company.create_sliding_windows_classes();
+        for (auto i : windowsInfo) {
+            cout << i.windowName_ << endl;
+            cout << i.windowNameEx_ << endl;
+            for (int j = 0; j < i.interval_.size(); j += 2) {
+                cout << company.date[i.interval_[j]] << "~" <<company.date[i.interval_[j + 1]] << endl;
+            }
+        }
     }
     return 0;
 }
