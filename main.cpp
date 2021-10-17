@@ -23,7 +23,6 @@ string _testEndYear = "2021";
 int _testYearLength = stod(_testEndYear) - stod(_testStartYear);
 string _slidingWindows[] = {"YY2Y", "YH2Y", "Y2Y", "Y2H", "Y2Q", "Y2M", "H#", "H2H", "H2Q", "H2M", "Q#", "Q2Q", "Q2M", "M#", "M2M", "A2A", "10D5"};
 string _slidingWindowsEX[] = {"24M12", "18M12", "12M12", "12M6", "12M3", "12M1", "6M", "6M6", "6M3", "6M1", "3M", "3M3", "3M1", "1M", "1M1", "A2A", "10D5"};
-int _windowNumber = sizeof(_slidingWindows) / sizeof(_slidingWindows[0]); //暫放
 
 int _techIndex = 0;
 int _MAUse = 0;
@@ -36,6 +35,7 @@ string _outputPath = "result";
 
 vector<vector<string> > read_data(path);
 vector<path> get_path(path);
+vector<string> find_train_type(string, char &);
 
 class CompanyInfo {
 public:
@@ -69,7 +69,6 @@ public:
         void find_train_interval();
         void find_train_start_row(int, char);
         void find_train_start_end(vector<string>, char);
-        vector<string> find_train_type(string, char &);
         void print_train();
         TrainWindow(string window, string windowEx, string *date, int testStartRow, int testEndRow, int totalDays, int longestTrainRow) : windowName_(window), windowNameEx_(windowEx), date_(date), testStartRow_(testStartRow), testEndRow_(testEndRow), totalDays_(totalDays), longestTrainRow_(longestTrainRow) {
             find_train_interval();
@@ -91,21 +90,16 @@ public:
     int longestTrainMonth_{0};
     int longestTrainRow_;
     int windowNumber_;
-    vector<vector<int> > trainInterval;
     
     void store_date_price(path);
     string create_folder();
     void cal_MA();
     void train();
-    void find_train_interval();
     void find_train_start_row(int, char);
-    void find_train_start_end(vector<string>, char);
-    vector<string> find_train_type(string, char &);
     void print_train();
     void find_longest_train_month_row();
     MATable create_MATable();
     void outputMATable();
-    void find_cross(int, int);
     CompanyInfo(path filePath, string MAUse) {
         companyName = filePath.stem().string();
         store_date_price(filePath);
@@ -317,22 +311,6 @@ void MA_GNQTS::print_betaMatrix() {
     cout << endl;
 }
 
-vector<string> CompanyInfo::TrainWindow::find_train_type(string window, char &delimiter) {
-    for (int i = 0; i < window.length(); i++) {
-        if (isalpha(window[i])) {
-            delimiter = window[i];
-            break;
-        }
-    }
-    string segment;
-    vector<string> segmentList;
-    stringstream toCut(window);
-    while (getline(toCut, segment, delimiter)) {
-        segmentList.push_back(segment);
-    }
-    return segmentList;
-}
-
 void CompanyInfo::TrainWindow::find_train_interval() {
     char delimiter;
     vector<string> trainType = find_train_type(windowNameEx_, delimiter);
@@ -446,11 +424,6 @@ void CompanyInfo::TrainWindow::print_train() {
     }
 }
 
-
-
-
-
-
 string CompanyInfo::create_folder() {
     create_directories(MAType + "/" + companyName);
     return MAType + "/" + companyName;
@@ -527,22 +500,6 @@ void CompanyInfo::train() {
     }
 }
 
-void CompanyInfo::find_train_interval() {
-    for (int windowsIndex = 0; windowsIndex < windowNumber_; windowsIndex++) {
-        char delimiter;
-        vector<string> trainType = find_train_type(_slidingWindowsEX[windowsIndex], delimiter);
-        if (_slidingWindows[windowsIndex] == "A2A") {
-            vector<int> tmp;
-            tmp.push_back(testStartRow);
-            tmp.push_back(testEndRow);
-            trainInterval.push_back(tmp);
-        }
-        else {
-            find_train_start_end(trainType, delimiter);
-        }
-    }
-}
-
 void CompanyInfo::find_train_start_row(int trainPeriodLength, char delimiter) {
     trainStartRow = -1;
     trainEndRow = -1;
@@ -564,105 +521,6 @@ void CompanyInfo::find_train_start_row(int trainPeriodLength, char delimiter) {
     if (trainStartRow == -1) {
         cout << companyName + " can not find trainStartRow " << trainPeriodLength << endl;
         exit(1);
-    }
-}
-
-void CompanyInfo::find_train_start_end(vector<string> trainType, char delimiter) {
-    vector<int> startRow;
-    vector<int> endRow;
-    vector<int> allRow;
-    int trainPeriodLength = stoi(trainType[0]);
-    int intervalNum = -1;
-    int testPeriodLength = -1;
-    //=======================================找出訓練期開始Row
-    if (trainType.size() == 2) {
-        find_train_start_row(trainPeriodLength, delimiter);
-        intervalNum = _testYearLength * (12 / stoi(trainType[1]));
-        testPeriodLength = stoi(trainType[1]);
-    }
-    else if (trainType.size() == 1) {
-        find_train_start_row(12, delimiter);
-        intervalNum = _testYearLength * (12 / stoi(trainType[0]));
-        testPeriodLength = stoi(trainType[0]);
-    }
-    //=======================================找出所有訓練區間
-    if (delimiter == 'M') {
-        startRow.push_back(trainStartRow);
-        for (int i = trainStartRow, intervalCount = 1, monthCount = 0; intervalCount < intervalNum; i++) {
-            if (date[i].substr(5, 2) != date[i + 1].substr(5, 2)) {
-                monthCount++;
-                if (monthCount == testPeriodLength) {
-                    startRow.push_back(i + 1);
-                    intervalCount++;
-                    monthCount = 0;
-                }
-            }
-        }
-        if (trainType.size() == 2) {
-            endRow.push_back(testStartRow - 1);
-            trainEndRow = testStartRow;
-        }
-        else if (trainType.size() == 1) {
-            for (int i = trainStartRow, monthCount = 0; i < totalDays; i++) {
-                if (date[i].substr(5, 2) != date[i + 1].substr(5, 2)) {
-                    monthCount++;
-                    if (monthCount == trainPeriodLength) {
-                        endRow.push_back(i);
-                        trainEndRow = i + 1;
-                        break;
-                    }
-                }
-            }
-        }
-        for (int i = trainEndRow, intervalCount = 1, monthCount = 0; intervalCount < intervalNum; i++) {
-            if (date[i].substr(5, 2) != date[i + 1].substr(5, 2)) {
-                monthCount++;
-                if (monthCount == testPeriodLength) {
-                    endRow.push_back(i);
-                    intervalCount++;
-                    monthCount = 0;
-                }
-            }
-        }
-    }
-    else if (delimiter == 'D') {
-        for (int i = trainStartRow; i <= testEndRow - trainPeriodLength; i += testPeriodLength) {
-            startRow.push_back(i);
-        }
-        for (int i = trainEndRow; i < testEndRow; i += testPeriodLength) {
-            endRow.push_back(i);
-        }
-    }
-    for (int i = 0; i < startRow.size(); i++) {
-        allRow.push_back(startRow[i]);
-        allRow.push_back(endRow[i]);
-    }
-    //=======================================
-    trainInterval.push_back(allRow);
-}
-
-vector<string> CompanyInfo::find_train_type(string window, char &delimiter) {
-    for (int i = 0; i < window.length(); i++) {
-        if (isalpha(window[i])) {
-            delimiter = window[i];
-            break;
-        }
-    }
-    string segment;
-    vector<string> segmentList;
-    stringstream toCut(window);
-    while (getline(toCut, segment, delimiter)) {
-        segmentList.push_back(segment);
-    }
-    return segmentList;
-}
-
-void CompanyInfo::print_train() {
-    for (int windowsIndex = 0; windowsIndex < windowNumber_; windowsIndex++) {
-        cout << _slidingWindows[windowsIndex] << endl;
-        for (int i = 0; i < trainInterval[windowsIndex].size(); i += 2) {
-            cout << date[trainInterval[windowsIndex][i]] << "~" << date[trainInterval[windowsIndex][i + 1]] << endl;
-        }
     }
 }
 
@@ -762,15 +620,28 @@ vector<path> get_path(path targetPath) {
     return filePath;
 }
 
+vector<string> find_train_type(string window, char &delimiter) {
+    for (int i = 0; i < window.length(); i++) {
+        if (isalpha(window[i])) {
+            delimiter = window[i];
+            break;
+        }
+    }
+    string segment;
+    vector<string> segmentList;
+    stringstream toCut(window);
+    while (getline(toCut, segment, delimiter)) {
+        segmentList.push_back(segment);
+    }
+    return segmentList;
+}
+
 int main(int argc, const char *argv[]) {
     string MAUse[] = {"SMA", "WMA", "EMA"};
     vector<path> companyPricePath = get_path(_pricePath);
     for (int companyIndex = 0; companyIndex < 1; companyIndex++) {
         CompanyInfo company(companyPricePath[companyIndex], MAUse[_MAUse]);
-        //        company.cal_MA();
         company.train();
-        //        CompanyInfo::TrainWindow test("M2M", "1M1", company.date, company.testStartRow, company.testEndRow, company.totalDays, company.longestTrainRow_);
-        //        test.print_train();
     }
     return 0;
 }
