@@ -58,22 +58,18 @@ public:
         string windowName_;
         string windowNameEx_;
         vector<int> interval_;
-        int testStartRow_;
-        int testEndRow_;
-        string *date_;
         int trainStartRow_{-1};
         int trainEndRow_{-1};
-        int longestTrainRow_;
-        int totalDays_;
+        CompanyInfo *company_;
         
         void find_train_interval();
         void find_train_start_row(int, char);
         void find_train_start_end(vector<string>, char);
         void print_train();
-        TrainWindow(string window, string windowEx, string *date, int testStartRow, int testEndRow, int totalDays, int longestTrainRow) : windowName_(window), windowNameEx_(windowEx), date_(date), testStartRow_(testStartRow), testEndRow_(testEndRow), totalDays_(totalDays), longestTrainRow_(longestTrainRow) {
+        TrainWindow(string window, string windowEx, CompanyInfo *company) : windowName_(window), windowNameEx_(windowEx), company_(company) {
             find_train_interval();
             for (int &i : interval_) {
-                i -= longestTrainRow_;
+                i -= company_->longestTrainRow_;
             }
         }
     };
@@ -94,7 +90,7 @@ public:
     void store_date_price(path);
     string create_folder();
     void cal_MA();
-    void train();
+    void train(CompanyInfo *);
     void find_train_start_row(int, char);
     void print_train();
     void find_longest_train_month_row();
@@ -119,7 +115,7 @@ class MA_GNQTS {
 public:
     class Trade {
     public:
-        Trade(int trainStartRow, int trainEndRow, CompanyInfo::MATable &table) {
+        Trade(int trainStartRow, int trainEndRow, CompanyInfo::MATable *table) {
             
         }
     };
@@ -167,7 +163,7 @@ public:
     void update_global();
     void print_particle(Particle);
     void print_betaMatrix();
-    MA_GNQTS(int trainStartRow, int trainEndRow, CompanyInfo::MATable &table) : generation_(_generationNumber) {
+    MA_GNQTS(int trainStartRow, int trainEndRow, CompanyInfo::MATable *table) : generation_(_generationNumber) {
         for (int generation = 0; generation < generation_; generation++) {
             for (int i = 0; i < PARTICAL_AMOUNT; i++) {
                 measure(particles_[i]);
@@ -315,8 +311,8 @@ void CompanyInfo::TrainWindow::find_train_interval() {
     char delimiter;
     vector<string> trainType = find_train_type(windowNameEx_, delimiter);
     if (windowName_ == "A2A") {
-        interval_.push_back(testStartRow_);
-        interval_.push_back(testEndRow_);
+        interval_.push_back(company_->testStartRow);
+        interval_.push_back(company_->testEndRow);
     }
     else {
         find_train_start_end(trainType, delimiter);
@@ -325,8 +321,8 @@ void CompanyInfo::TrainWindow::find_train_interval() {
 
 void CompanyInfo::TrainWindow::find_train_start_row(int trainPeriodLength, char delimiter) {
     if (delimiter == 'M') {
-        for (int i = testStartRow_ - 1, monthCount = 0; i >= 0; i--) {
-            if (date_[i].substr(5, 2) != date_[i - 1].substr(5, 2)) {
+        for (int i = company_->testStartRow - 1, monthCount = 0; i >= 0; i--) {
+            if (company_->date[i].substr(5, 2) != company_->date[i - 1].substr(5, 2)) {
                 monthCount++;
                 if (monthCount == trainPeriodLength) {
                     trainStartRow_ = i;
@@ -336,8 +332,8 @@ void CompanyInfo::TrainWindow::find_train_start_row(int trainPeriodLength, char 
         }
     }
     else if (delimiter == 'D') {
-        trainStartRow_ = testStartRow_ - trainPeriodLength;
-        trainEndRow_ = testStartRow_ - 1;
+        trainStartRow_ = company_->testStartRow - trainPeriodLength;
+        trainEndRow_ = company_->testStartRow - 1;
     }
     if (trainStartRow_ == -1) {
         cout << windowName_ + " can not find trainStartRow " << trainPeriodLength << endl;
@@ -366,7 +362,7 @@ void CompanyInfo::TrainWindow::find_train_start_end(vector<string> trainType, ch
     if (delimiter == 'M') {
         startRow.push_back(trainStartRow_);
         for (int i = trainStartRow_, intervalCount = 1, monthCount = 0; intervalCount < intervalNum; i++) {
-            if (date_[i].substr(5, 2) != date_[i + 1].substr(5, 2)) {
+            if (company_->date[i].substr(5, 2) != company_->date[i + 1].substr(5, 2)) {
                 monthCount++;
                 if (monthCount == testPeriodLength) {
                     startRow.push_back(i + 1);
@@ -376,12 +372,12 @@ void CompanyInfo::TrainWindow::find_train_start_end(vector<string> trainType, ch
             }
         }
         if (trainType.size() == 2) {
-            endRow.push_back(testStartRow_ - 1);
-            trainEndRow_ = testStartRow_;
+            endRow.push_back(company_->testStartRow - 1);
+            trainEndRow_ = company_->testStartRow;
         }
         else if (trainType.size() == 1) {
-            for (int i = trainStartRow_, monthCount = 0; i < totalDays_; i++) {
-                if (date_[i].substr(5, 2) != date_[i + 1].substr(5, 2)) {
+            for (int i = trainStartRow_, monthCount = 0; i < company_->totalDays; i++) {
+                if (company_->date[i].substr(5, 2) != company_->date[i + 1].substr(5, 2)) {
                     monthCount++;
                     if (monthCount == trainPeriodLength) {
                         endRow.push_back(i);
@@ -392,7 +388,7 @@ void CompanyInfo::TrainWindow::find_train_start_end(vector<string> trainType, ch
             }
         }
         for (int i = trainEndRow_, intervalCount = 1, monthCount = 0; intervalCount < intervalNum; i++) {
-            if (date_[i].substr(5, 2) != date_[i + 1].substr(5, 2)) {
+            if (company_->date[i].substr(5, 2) != company_->date[i + 1].substr(5, 2)) {
                 monthCount++;
                 if (monthCount == testPeriodLength) {
                     endRow.push_back(i);
@@ -403,10 +399,10 @@ void CompanyInfo::TrainWindow::find_train_start_end(vector<string> trainType, ch
         }
     }
     else if (delimiter == 'D') {
-        for (int i = trainStartRow_; i <= testEndRow_ - trainPeriodLength; i += testPeriodLength) {
+        for (int i = trainStartRow_; i <= company_->testEndRow - trainPeriodLength; i += testPeriodLength) {
             startRow.push_back(i);
         }
-        for (int i = trainEndRow_; i < testEndRow_; i += testPeriodLength) {
+        for (int i = trainEndRow_; i < company_->testEndRow; i += testPeriodLength) {
             endRow.push_back(i);
         }
     }
@@ -420,7 +416,7 @@ void CompanyInfo::TrainWindow::find_train_start_end(vector<string> trainType, ch
 void CompanyInfo::TrainWindow::print_train() {
     cout << windowName_ + "=" + windowNameEx_ << endl;
     for (int i = 0; i < interval_.size(); i += 2) {
-        cout << date_[interval_[i] + longestTrainRow_] + "~" + date_[interval_[i + 1] + longestTrainRow_] << endl;
+        cout << company_->date[interval_[i] + company_->longestTrainRow_] + "~" + company_->date[interval_[i + 1] + company_->longestTrainRow_] << endl;
     }
 }
 
@@ -485,16 +481,16 @@ void CompanyInfo::cal_MA() {
     }
 }
 
-void CompanyInfo::train() {
+void CompanyInfo::train(CompanyInfo *company) {
     MATable table = create_MATable();
     for (int windowIndex = 0; windowIndex < windowNumber_; windowIndex++) {
         srand(343);
-        TrainWindow window(_slidingWindows[windowIndex], _slidingWindowsEX[windowIndex], date, testStartRow, testEndRow, totalDays, longestTrainRow_);
+        TrainWindow window(_slidingWindows[windowIndex], _slidingWindowsEX[windowIndex], company);
         window.print_train();
         for (int intervalIndex = 0; intervalIndex < window.interval_.size(); intervalIndex += 2) {
             for (int expCnt = 0; expCnt < _expNumber; expCnt++) {
 //                cout << "exp:" << expCnt << endl;
-                MA_GNQTS runGNQTS(window.interval_[intervalIndex], window.interval_[intervalIndex + 1], table);
+                MA_GNQTS runGNQTS(window.interval_[intervalIndex], window.interval_[intervalIndex + 1], &table);
             }
         }
     }
@@ -641,7 +637,7 @@ int main(int argc, const char *argv[]) {
     vector<path> companyPricePath = get_path(_pricePath);
     for (int companyIndex = 0; companyIndex < 1; companyIndex++) {
         CompanyInfo company(companyPricePath[companyIndex], MAUse[_MAUse]);
-        company.train();
+        company.train(&company);
     }
     return 0;
 }
