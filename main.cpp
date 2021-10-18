@@ -42,11 +42,17 @@ public:
     class MATable {
     public:
         int trainDays;
-        string *date;
-        double *price;
+        string *MADate;
+        double *MAPrice;
         double **MAValues;
+        CompanyInfo &company_;
+        
+        void create_MATable();
+        MATable(CompanyInfo &company) : company_(company) {
+            create_MATable();
+        }
         ~MATable() {
-            delete[] date;
+            delete[] MADate;
             for (int i = 0; i < trainDays; i++) {
                 delete[] MAValues[i];
             }
@@ -94,8 +100,7 @@ public:
     void find_train_start_row(int, char);
     void print_train();
     void find_longest_train_month_row();
-    MATable create_MATable();
-    void outputMATable();
+    void outputMATable(CompanyInfo &);
     CompanyInfo(path filePath, string MAUse) {
         companyName = filePath.stem().string();
         store_date_price(filePath);
@@ -113,9 +118,27 @@ public:
 
 class MA_GNQTS {
 public:
+    class Particle {
+    public:
+        int buy1_bi[BUY_BIT1]{0};
+        int buy2_bi[BUY_BIT2]{0};
+        int sell1_bi[SELL_BIT1]{0};
+        int sell2_bi[SELL_BIT2]{0};
+        int buy1_dec{0};
+        int buy2_dec{0};
+        int sell1_dec{0};
+        int sell2_dec{0};
+        double rate_of_return{0};
+        
+        void initialize_particle();
+        Particle() {
+        }
+        ~Particle() {
+        }
+    };
     class Trade {
     public:
-        Trade(int trainStartRow, int trainEndRow, CompanyInfo::MATable &table) {
+        Trade(int trainStartRow, int trainEndRow, CompanyInfo::MATable &table, Particle &particle) {
             
         }
     };
@@ -135,24 +158,7 @@ public:
         ~BetaMatrix() {
         }
     };
-    class Particle {
-    public:
-        int buy1_bi[BUY_BIT1]{0};
-        int buy2_bi[BUY_BIT2]{0};
-        int sell1_bi[SELL_BIT1]{0};
-        int sell2_bi[SELL_BIT2]{0};
-        int buy1_dec{0};
-        int buy2_dec{0};
-        int sell1_dec{0};
-        int sell2_dec{0};
-        double rate_of_return{0};
-        
-        void initialize_particle();
-        Particle() {
-        }
-        ~Particle() {
-        }
-    };
+    
     Particle particles_[PARTICAL_AMOUNT];
     BetaMatrix betaMtrix_;
     int generation_;
@@ -168,7 +174,7 @@ public:
             for (int i = 0; i < PARTICAL_AMOUNT; i++) {
                 measure(particles_[i]);
                 convert_bi_to_dec(particles_[i]);
-                Trade trade(trainStartRow, trainEndRow, table);
+                Trade trade(trainStartRow, trainEndRow, table, particles_[i]);
                 update_local();
             }
             update_global();
@@ -482,7 +488,7 @@ void CompanyInfo::cal_MA() {
 }
 
 void CompanyInfo::train(CompanyInfo &company) {
-    MATable table = create_MATable();
+    MATable table(company);
     for (int windowIndex = 0; windowIndex < windowNumber_; windowIndex++) {
         srand(343);
         TrainWindow window(_slidingWindows[windowIndex], _slidingWindowsEX[windowIndex], company);
@@ -540,39 +546,37 @@ void CompanyInfo::find_longest_train_month_row() {
     }
 }
 
-CompanyInfo::MATable CompanyInfo::create_MATable() {
-    MATable table;
-    table.trainDays = totalDays - longestTrainRow_;
-    table.date = new string[table.trainDays];
-    table.price = new double[table.trainDays];
-    for (int i = longestTrainRow_, j = 0; i < totalDays; i++, j++) {
-        table.date[j] = date[i];
-        table.price[j] = price[i];
+void CompanyInfo::MATable::create_MATable() {
+    trainDays = company_.totalDays - company_.longestTrainRow_;
+    MADate = new string[trainDays];
+    MAPrice = new double[trainDays];
+    for (int i = company_.longestTrainRow_, j = 0; i < company_.totalDays; i++, j++) {
+        MADate[j] = company_.date[i];
+        MAPrice[j] = company_.price[i];
     }
-    table.MAValues = new double *[table.trainDays];
-    for (int i = 0; i < table.trainDays; i++) {
-        table.MAValues[i] = new double[257];
+    MAValues = new double *[trainDays];
+    for (int i = 0; i < trainDays; i++) {
+        MAValues[i] = new double[257];
     }
-    vector<path> MAFilePath = get_path(MAType + "/" + companyName);
+    vector<path> MAFilePath = get_path(company_.MAType + "/" + company_.companyName);
     for (int i = 0; i < MAFilePath.size(); i++) {
         vector<vector<string> > MAFile = read_data(MAFilePath[i]);
-        if (int(MAFile.size()) - table.trainDays < 0) {
-            cout << companyName + " MA file not old enougth" << endl;
+        if (int(MAFile.size()) - trainDays < 0) {
+            cout << company_.companyName + " MA file not old enougth" << endl;
             exit(1);
         }
-        for (int j = 0, k = int(MAFile.size()) - table.trainDays; k < MAFile.size(); j++, k++) {
-            table.MAValues[j][i + 1] = stod(MAFile[k][1]);
+        for (int j = 0, k = int(MAFile.size()) - trainDays; k < MAFile.size(); j++, k++) {
+            MAValues[j][i + 1] = stod(MAFile[k][1]);
         }
     }
-    return table;
 }
 
-void CompanyInfo::outputMATable() {
-    MATable table = create_MATable();
+void CompanyInfo::outputMATable(CompanyInfo &company) {
+    MATable table(company);
     ofstream out;
     out.open(companyName + "_" + MAType + "Table.csv");
     for (int i = 0; i < table.trainDays; i++) {
-        out << table.date[i] + ",";
+        out << table.MADate[i] + ",";
         for (int j = 1; j < 257; j++) {
             out << table.MAValues[i][j] << ",";
         }
