@@ -76,7 +76,7 @@ vector<path> get_path(path targetPath) {
 
 double round(double input, int point) {
     double output = (int)(input * pow(10, point) + 0.5);
-    return (double)output / 100;
+    return output / (double)pow(10, point);
 }
 
 class CompanyInfo {
@@ -853,8 +853,13 @@ void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &tabl
 }
 
 MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record) : particles_(PARTICAL_AMOUNT), MAtable_(table), company_(company) {
+    for (int i = 0; i < table.days__; i++) {
+        table.price__[0] = round(table.price__[i], 2);
+        for (int j = 1; j < 257; j++) {
+            table.allMA__[i][j] = round(table.allMA__[i][j], 2);
+        }
+    }
     find_new_row(startDate, endDate);  //如果有設定特定的日期，這邊要重新找row
-    cout << "XX" << endl;
     is_record_on(record);
     for (int windowIndex{0}; windowIndex < company.windowNumber_; windowIndex++) {
         CompanyInfo::TrainWindow window = set_wondow(startDate, targetWindow, windowIndex);
@@ -1176,7 +1181,7 @@ void CompanyInfo::output_MA() {
                     //                    out << fixed << setprecision(2) << date_[dateRow] + "," << MARangePriceSum / MA << endl;
                     //                }
                 for (int i = 0, dateRow = MA - 1; i < MAtable_[MA].size(); i++, dateRow++) {
-                    out << fixed << setprecision(2) << date_[dateRow] + "," << MAtable_[MA][i] << endl;
+                    out << date_[dateRow] + "," << MAtable_[MA][i] << endl;
                 }
                 out.close();
             }
@@ -1295,7 +1300,7 @@ void CompanyInfo::output_MATable() {
     for (int i = 0; i < table.days__; i++) {
         out << table.date__[i] + ",";
         for (int j = 1; j < 257; j++) {
-            out << fixed << setprecision(2) << table.allMA__[i][j] << ",";
+            out << table.allMA__[i][j] << ",";
         }
         out << endl;
     }
