@@ -330,17 +330,20 @@ void MA_GNQTS::Particle::measure(BetaMatrix &beta) {
 
 void MA_GNQTS::Particle::convert_bi_dec() {
     for (int i = 0, j = BUY1_BITS - 1; i < BUY1_BITS; i++, j--) {
-        buy1_dec__ = pow(2, j) * buy1_bi__[i] + 1;
-        
+        buy1_dec__ += pow(2, j) * buy1_bi__[i];
+        buy1_dec__++;
     }
     for (int i = 0, j = BUY2_BITS - 1; i < BUY2_BITS; i++, j--) {
-        buy2_dec__ = pow(2, j) * buy2_bi__[i] + 1;
+        buy2_dec__ += pow(2, j) * buy2_bi__[i] + 1;
+        buy2_dec__++;
     }
     for (int i = 0, j = SELL1_BITS - 1; i < SELL1_BITS; i++, j--) {
-        sell1_dec__ = pow(2, j) * sell1_bi__[i] + 1;
+        sell1_dec__ += pow(2, j) * sell1_bi__[i] + 1;
+        sell1_dec__++;
     }
     for (int i = 0, j = SELL2_BITS - 1; i < SELL2_BITS; i++, j--) {
-        sell2_dec__ = pow(2, j) * sell2_bi__[i] + 1;
+        sell2_dec__ += pow(2, j) * sell2_bi__[i] + 1;
+        sell2_dec__++;
     }
 }
 
