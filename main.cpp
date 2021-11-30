@@ -46,7 +46,7 @@ vector<vector<string>> read_data(path filePath) {
         cout << filePath.string() + " not found" << endl;
         exit(1);
     }
-        //    cout << "reading " + filePath.filename().string() << endl;
+    cout << "reading " + filePath.filename().string() << endl;
     string row;
     string cell;
     vector<string> oneRow;
@@ -86,10 +86,10 @@ public:
         int days__;
         string *date__;
         double *price__;
-        double **allMA__;
+        double **MAtable__;
         CompanyInfo &company__;
         
-        void create_MATable();
+        void create_MAtable();
         MATable(CompanyInfo &);
         ~MATable();
     };
@@ -223,6 +223,7 @@ public:
     void start_gen(bool, int, int, ofstream &);
     void start_exp(bool, int, ofstream &);
     void print_train_data(CompanyInfo &, CompanyInfo::MATable &);
+    void round_MATable_obj(CompanyInfo::MATable &);
     
     MA_GNQTS(CompanyInfo &, CompanyInfo::MATable &, string, string, string, bool, bool);
 };
@@ -341,12 +342,12 @@ void MA_GNQTS::Particle::convert_bi_dec() {
     }
 }
 
-void MA_GNQTS::Particle::record_buy_info(CompanyInfo::MATable &MAtable_, int i, int stockHold) {
-    tradeRecord__.push_back("buy," + MAtable_.date__[i] + "," + to_string(MAtable_.price__[i]) + "," + to_string(MAtable_.allMA__[i - 1][buy1_dec__]) + "," + to_string(MAtable_.allMA__[i - 1][buy2_dec__]) + "," + to_string(MAtable_.allMA__[i][buy1_dec__]) + "," + to_string(MAtable_.allMA__[i][buy2_dec__]) + "," + to_string(stockHold) + "," + to_string(remain__) + "," + to_string(remain__ + stockHold * MAtable_.price__[i]) + "\r");
+void MA_GNQTS::Particle::record_buy_info(CompanyInfo::MATable &table, int i, int stockHold) {
+    tradeRecord__.push_back("buy," + table.date__[i] + "," + to_string(table.price__[i]) + "," + to_string(table.MAtable__[i - 1][buy1_dec__]) + "," + to_string(table.MAtable__[i - 1][buy2_dec__]) + "," + to_string(table.MAtable__[i][buy1_dec__]) + "," + to_string(table.MAtable__[i][buy2_dec__]) + "," + to_string(stockHold) + "," + to_string(remain__) + "," + to_string(remain__ + stockHold * table.price__[i]) + "\r");
 }
 
-void MA_GNQTS::Particle::record_sell_info(CompanyInfo::MATable &MAtable_, int i, int stockHold) {
-    tradeRecord__.push_back("sell," + MAtable_.date__[i] + "," + to_string(MAtable_.price__[i]) + "," + to_string(MAtable_.allMA__[i - 1][sell1_dec__]) + "," + to_string(MAtable_.allMA__[i - 1][sell2_dec__]) + "," + to_string(MAtable_.allMA__[i][sell1_dec__]) + "," + to_string(MAtable_.allMA__[i][sell2_dec__]) + "," + to_string(stockHold) + "," + to_string(remain__) + "," + to_string(remain__ + stockHold * MAtable_.price__[i]) + "\r\r");
+void MA_GNQTS::Particle::record_sell_info(CompanyInfo::MATable &table, int i, int stockHold) {
+    tradeRecord__.push_back("sell," + table.date__[i] + "," + to_string(table.price__[i]) + "," + to_string(table.MAtable__[i - 1][sell1_dec__]) + "," + to_string(table.MAtable__[i - 1][sell2_dec__]) + "," + to_string(table.MAtable__[i][sell1_dec__]) + "," + to_string(table.MAtable__[i][sell2_dec__]) + "," + to_string(stockHold) + "," + to_string(remain__) + "," + to_string(remain__ + stockHold * table.price__[i]) + "\r\r");
 }
 
 void MA_GNQTS::Particle::record_last_info() {
@@ -367,7 +368,7 @@ void MA_GNQTS::Particle::round_price(CompanyInfo::MATable &table) {
     }
 }
 
-void MA_GNQTS::Particle::trade(int trainStartRow, int trainEndRow, CompanyInfo::MATable &table, bool lastRecord = false) {
+void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord = false) {
     int stockHold{0};
     if (isRecordOn__) {
         tradeRecord__.push_back(",date,price,preday 1,preday 2,today 1,today 2,stockHold,remain,capital lv\r");
@@ -376,8 +377,8 @@ void MA_GNQTS::Particle::trade(int trainStartRow, int trainEndRow, CompanyInfo::
         buyNum__ = 0;
         sellNum__ = 0;
     }
-    for (int i = trainStartRow; i <= trainEndRow; i++) {
-        if (check_buy_cross(stockHold, table.allMA__[i - 1][buy1_dec__], table.allMA__[i - 1][buy2_dec__], table.allMA__[i][buy1_dec__], table.allMA__[i][buy2_dec__], i, trainEndRow) && remain__ >= table.price__[i]) {
+    for (int i = startRow; i <= endRow; i++) {
+        if (check_buy_cross(stockHold, table.MAtable__[i - 1][buy1_dec__], table.MAtable__[i - 1][buy2_dec__], table.MAtable__[i][buy1_dec__], table.MAtable__[i][buy2_dec__], i, endRow) && remain__ >= table.price__[i]) {
             stockHold = floor(remain__ / table.price__[i]);
             remain__ = floor(remain__ - stockHold * table.price__[i]);
             buyNum__++;
@@ -385,7 +386,7 @@ void MA_GNQTS::Particle::trade(int trainStartRow, int trainEndRow, CompanyInfo::
                 record_buy_info(table, i, stockHold);
             }
         }
-        else if (check_sell_cross(stockHold, table.allMA__[i - 1][sell1_dec__], table.allMA__[i - 1][sell2_dec__], table.allMA__[i][sell1_dec__], table.allMA__[i][sell2_dec__], i, trainEndRow)) {
+        else if (check_sell_cross(stockHold, table.MAtable__[i - 1][sell1_dec__], table.MAtable__[i - 1][sell2_dec__], table.MAtable__[i][sell1_dec__], table.MAtable__[i][sell2_dec__], i, endRow)) {
             remain__ = floor(remain__ + (double)stockHold * table.price__[i]);
             stockHold = 0;
             sellNum__++;
@@ -852,13 +853,17 @@ void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &tabl
     cout << best_.RoR__ << "%" << endl;
 }
 
-MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record) : particles_(PARTICAL_AMOUNT), MAtable_(table), company_(company) {
+void MA_GNQTS::round_MATable_obj(CompanyInfo::MATable &table) {
     for (int i = 0; i < table.days__; i++) {
         table.price__[0] = round(table.price__[i], 2);
         for (int j = 1; j < 257; j++) {
-            table.allMA__[i][j] = round(table.allMA__[i][j], 2);
+            table.MAtable__[i][j] = round(table.MAtable__[i][j], 2);
         }
     }
+}
+
+MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record) : particles_(PARTICAL_AMOUNT), MAtable_(table), company_(company) {
+    round_MATable_obj(table);
     find_new_row(startDate, endDate);  //如果有設定特定的日期，這邊要重新找row
     is_record_on(record);
     for (int windowIndex{0}; windowIndex < company.windowNumber_; windowIndex++) {
@@ -878,7 +883,7 @@ MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string tar
     }
 }
 
-void CompanyInfo::MATable::create_MATable() {
+void CompanyInfo::MATable::create_MAtable() {
     days__ = company__.totalDays_ - company__.longestTrainRow_;
     date__ = new string[days__];
     price__ = new double[days__];
@@ -886,9 +891,9 @@ void CompanyInfo::MATable::create_MATable() {
         date__[j] = company__.date_[i];
         price__[j] = company__.price_[i];
     }
-    allMA__ = new double *[days__];
+    MAtable__ = new double *[days__];
     for (int i = 0; i < days__; i++) {
-        allMA__[i] = new double[257];
+        MAtable__[i] = new double[257];
     }
     vector<path> MAFilePath = get_path(company__.MAType_ + "/" + company__.companyName_);
     for (int i = 0; i < MAFilePath.size(); i++) {
@@ -898,22 +903,22 @@ void CompanyInfo::MATable::create_MATable() {
             exit(1);
         }
         for (int j = 0, k = int(MAFile.size()) - days__; k < MAFile.size(); j++, k++) {
-            allMA__[j][i + 1] = stod(MAFile[k][1]);
+            MAtable__[j][i + 1] = stod(MAFile[k][1]);
         }
     }
 }
 
 CompanyInfo::MATable::MATable(CompanyInfo &company) : company__(company) {
-    create_MATable();
+    create_MAtable();
 }
 
 CompanyInfo::MATable::~MATable() {
     delete[] date__;
     delete[] price__;
     for (int i = 0; i < days__; i++) {
-        delete[] allMA__[i];
+        delete[] MAtable__[i];
     }
-    delete[] allMA__;
+    delete[] MAtable__;
 }
 
 void CompanyInfo::TrainWindow::find_train_interval() {
@@ -1300,7 +1305,7 @@ void CompanyInfo::output_MATable() {
     for (int i = 0; i < table.days__; i++) {
         out << table.date__[i] + ",";
         for (int j = 1; j < 257; j++) {
-            out << table.allMA__[i][j] << ",";
+            out << table.MAtable__[i][j] << ",";
         }
         out << endl;
     }
@@ -1399,6 +1404,47 @@ int main(int argc, const char *argv[]) {
     }
     return 0;
 }
+
+/*transpose MAtable
+vector<double> tmp;
+allMA__.push_back(tmp);
+switch (company__.MAType_[0]) {
+    case 'S':
+        for (int MA = 1; MA < 257; MA++) {
+            for (int dateRow = MA - 1; dateRow < company__.totalDays_; dateRow++) {
+                double MARangePriceSum = 0;
+                for (int i = dateRow, j = MA; j > 0; i--, j--) {
+                    MARangePriceSum += company__.price_[i];
+                }
+                tmp.push_back(MARangePriceSum / MA);
+            }
+            allMA__.push_back(tmp);
+            tmp.clear();
+        }
+        break;
+    case 'W':
+        break;
+    case 'E':
+        break;
+}
+for (auto it = allMA__.begin() + 1; it != allMA__.end(); it++) {
+    reverse(it->begin(), it->end());
+    it->resize(days__);
+    reverse(it->begin(), it->end());
+}
+vector<vector<double>> v;
+v.resize(days__);
+for (auto it = v.begin(); it != v.end(); it++) {
+    it->resize(257);
+}
+for (int i = 0; i < days__; i++) {
+    for (int j = 1; j < 257; j++) {
+        v[i][j] = allMA__[j][i];
+    }
+}
+allMA__ = v;
+*/
+
 
 /*calculate time
  time_point begin = std::chrono::steady_clock::now();
