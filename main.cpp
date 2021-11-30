@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -9,7 +10,7 @@
 #include <string>
 #include <vector>
 using namespace std;
-using namespace std::filesystem;
+using namespace filesystem;
 using namespace std::chrono;
 
 #define PARTICAL_AMOUNT 10
@@ -624,7 +625,7 @@ void MA_GNQTS::BetaMatrix::initilaize() {
     fill(buy1__.begin(), buy1__.end(), 0.5);
     fill(buy2__.begin(), buy2__.end(), 0.5);
     fill(sell1__.begin(), sell1__.end(), 0.5);
-    fill(sell1__.begin(), sell2__.end(), 0.5);
+    fill(sell2__.begin(), sell2__.end(), 0.5);
 }
 
 void MA_GNQTS::BetaMatrix::print(ofstream &out, bool debug) {
@@ -666,7 +667,7 @@ void MA_GNQTS::BetaMatrix::print(ofstream &out, bool debug) {
     //    }
     //    cout << "|";
     //    for (int i = 0; i < SELL2_BITS; i++) {
-    //        cout << betaMtrix_.sell1__[i] << ",";
+    //        cout << betaMtrix_.sell2__[i] << ",";
     //    }
     //    cout << endl;
     //}
@@ -1394,8 +1395,8 @@ int main(int argc, const char *argv[]) {
             //        company.cal_MA_output();
             //        company.outputMATable();
             //        company.train("M2M");
-            //        company.train("2020-01-02", "2021-06-30");
-        company.train("2012-01-04", "2012-12-28");
+        company.train("2020-01-02", "2021-06-30");
+            //        company.train("2012-01-04", "2012-12-28");
             //        company.print_train();
             //        company.instant_trade("2020-01-02", "2021-06-30", 5,20,5,20);
         if (setCompany != "all") {
@@ -1406,45 +1407,44 @@ int main(int argc, const char *argv[]) {
 }
 
 /*transpose MAtable
-vector<double> tmp;
-allMA__.push_back(tmp);
-switch (company__.MAType_[0]) {
-    case 'S':
-        for (int MA = 1; MA < 257; MA++) {
-            for (int dateRow = MA - 1; dateRow < company__.totalDays_; dateRow++) {
-                double MARangePriceSum = 0;
-                for (int i = dateRow, j = MA; j > 0; i--, j--) {
-                    MARangePriceSum += company__.price_[i];
-                }
-                tmp.push_back(MARangePriceSum / MA);
-            }
-            allMA__.push_back(tmp);
-            tmp.clear();
-        }
-        break;
-    case 'W':
-        break;
-    case 'E':
-        break;
-}
-for (auto it = allMA__.begin() + 1; it != allMA__.end(); it++) {
-    reverse(it->begin(), it->end());
-    it->resize(days__);
-    reverse(it->begin(), it->end());
-}
-vector<vector<double>> v;
-v.resize(days__);
-for (auto it = v.begin(); it != v.end(); it++) {
-    it->resize(257);
-}
-for (int i = 0; i < days__; i++) {
-    for (int j = 1; j < 257; j++) {
-        v[i][j] = allMA__[j][i];
-    }
-}
-allMA__ = v;
-*/
-
+ vector<double> tmp;
+ allMA__.push_back(tmp);
+ switch (company__.MAType_[0]) {
+ case 'S':
+ for (int MA = 1; MA < 257; MA++) {
+ for (int dateRow = MA - 1; dateRow < company__.totalDays_; dateRow++) {
+ double MARangePriceSum = 0;
+ for (int i = dateRow, j = MA; j > 0; i--, j--) {
+ MARangePriceSum += company__.price_[i];
+ }
+ tmp.push_back(MARangePriceSum / MA);
+ }
+ allMA__.push_back(tmp);
+ tmp.clear();
+ }
+ break;
+ case 'W':
+ break;
+ case 'E':
+ break;
+ }
+ for (auto it = allMA__.begin() + 1; it != allMA__.end(); it++) {
+ reverse(it->begin(), it->end());
+ it->resize(days__);
+ reverse(it->begin(), it->end());
+ }
+ vector<vector<double>> v;
+ v.resize(days__);
+ for (auto it = v.begin(); it != v.end(); it++) {
+ it->resize(257);
+ }
+ for (int i = 0; i < days__; i++) {
+ for (int j = 1; j < 257; j++) {
+ v[i][j] = allMA__[j][i];
+ }
+ }
+ allMA__ = v;
+ */
 
 /*calculate time
  time_point begin = std::chrono::steady_clock::now();
