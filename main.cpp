@@ -13,7 +13,7 @@ using namespace std;
 using namespace filesystem;
 using namespace std::chrono;
 
-#define PARTICAL_AMOUNT 10
+#define PARTICAL_AMOUNT 1
 #define TOTAL_CP_LV 10000000.0
 #define BUY1_BITS 8
 #define BUY2_BITS 8
@@ -36,7 +36,7 @@ string _algo[] = {"QTS", "GQTS", "GNQTS"};
 
 double _delta = 0.003;
 int _expNumber = 50;
-int _generationNumber = 10000;
+int _generationNumber = 1000;
 
 string _outputPath = "result";
 
@@ -127,9 +127,10 @@ public:
     int longestTrainRow_{-1};
     int windowNumber_;
     vector<vector<double>> MAtable_;
+    string trainFilePath;
     
     void store_date_price(path);
-    string create_folder();
+    void create_folder();
     void store_MA_to_vector();
     void output_MA();
     void train(string, string, string, bool, bool);
@@ -186,7 +187,7 @@ public:
         static bool check_sell_cross(int, double, double, double, double, int, int);
         void round_price(CompanyInfo::MATable &);
         void trade(int, int, CompanyInfo::MATable &, bool);
-        void print_trade_record(ofstream &, CompanyInfo &);
+        void print_trade_record(ofstream &);
         Particle(int buy1 = 0, int buy2 = 0, int sell1 = 0, int sell2 = 0, bool on = false);
     };
     
@@ -223,7 +224,7 @@ public:
     void store_exp_gen(int, int);
     void start_gen(bool, int, int, ofstream &);
     void start_exp(bool, int, ofstream &);
-    void print_train_data(CompanyInfo &, CompanyInfo::MATable &);
+    void print_train_data(CompanyInfo &, CompanyInfo::MATable &, string);
     void round_MATable_obj(CompanyInfo::MATable &);
     
     MA_GNQTS(CompanyInfo &, CompanyInfo::MATable &, string, string, string, bool, bool);
@@ -411,7 +412,7 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
     }
 }
 
-void MA_GNQTS::Particle::print_trade_record(ofstream &out, CompanyInfo &company) {
+void MA_GNQTS::Particle::print_trade_record(ofstream &out) {
     for_each(tradeRecord__.begin(), tradeRecord__.end(), [&out](auto &record) {
         out << record;
     });
@@ -763,6 +764,9 @@ CompanyInfo::TrainWindow MA_GNQTS::set_wondow(string &startDate, string &targetW
     if (startDate == "") {  //如果沒有設定特定的日期，就印所有視窗日期
         window.print_train();
     }
+    if (company_.trainFilePath == "") {
+        window.windowName__ = "";
+    }
     return window;
 }
 
@@ -826,9 +830,12 @@ void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
     update_best();
 }
 
-void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table) {
+void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table, string trainPath) {
+    if (trainPath != "") {
+        trainPath += "/";
+    }
     ofstream trainedData;
-    trainedData.open(table.date__[actualStartRow_] + "_" + table.date__[actualEndRow_] + ".csv");
+    trainedData.open(trainPath + table.date__[actualStartRow_] + "_" + table.date__[actualEndRow_] + ".csv");
     trainedData << "algo," + _algo[_algoUse] << endl;
     trainedData << "delta," << _delta << endl;
     trainedData << "exp," << _expNumber << endl;
@@ -853,7 +860,7 @@ void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &tabl
     best_.isRecordOn__ = true;
     best_.remain__ = TOTAL_CP_LV;
     best_.trade(actualStartRow_, actualEndRow_, table);
-    best_.print_trade_record(trainedData, company);
+    best_.print_trade_record(trainedData);
     trainedData.close();
     cout << best_.RoR__ << "%" << endl;
 }
@@ -882,7 +889,7 @@ MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string tar
                 start_exp(debug, expCnt, out);
             }
             out.close();
-            print_train_data(company, table);
+            print_train_data(company, table, company_.trainFilePath + window.windowName__);
         }
         cout << "==========" << endl;
     }
@@ -1106,9 +1113,13 @@ CompanyInfo::TrainWindow::TrainWindow(string window, CompanyInfo &company) : win
     }
 }
 
-string CompanyInfo::create_folder() {
+void CompanyInfo::create_folder() {
     create_directories(MAType_ + "/" + companyName_);
-    return MAType_ + "/" + companyName_;
+    trainFilePath = _outputPath + "/" + companyName_ + "/train/";
+    MAOutputPath_ =  MAType_ + "/" + companyName_;
+    for_each_n(_slidingWindows.begin(), _slidingWindows.size(), [&](auto i) {
+        create_directories(trainFilePath + i);
+    });
 }
 
 void CompanyInfo::store_date_price(path priceFilePath) {
@@ -1231,6 +1242,7 @@ void CompanyInfo::train(string targetWindow = "all", string startDate = "", stri
             targetWindow = startDate;
             startDate = "";
         }
+        trainFilePath = "";
     }
     else if (targetWindow.length() == 10 && startDate.length() == 10) {
         if (endDate == "record") {
@@ -1239,6 +1251,7 @@ void CompanyInfo::train(string targetWindow = "all", string startDate = "", stri
         endDate = startDate;
         startDate = targetWindow;
         targetWindow = "A2A";
+        trainFilePath = "";
     }
     else if (targetWindow == "record") {
         record = true;
@@ -1359,7 +1372,7 @@ void CompanyInfo::instant_trade(string startDate, string endDate, int buy1, int 
     p.trade(startRow, endRow, table, true);
     ofstream out;
     out.open(companyName_ + "_instantTrade_" + startDate + "_" + endDate + "_" + to_string(p.buy1_dec__) + "_" + to_string(p.buy2_dec__) + "_" + to_string(p.sell1_dec__) + "_" + to_string(p.sell2_dec__) + ".csv");
-    p.print_trade_record(out, *this);
+    p.print_trade_record(out);
     out.close();
 }
 
@@ -1367,7 +1380,7 @@ CompanyInfo::CompanyInfo(path filePath, string MAUse) {
     companyName_ = filePath.stem().string();
     store_date_price(filePath);
     MAType_ = MAUse;
-    MAOutputPath_ = create_folder();
+    create_folder();
     windowNumber_ = int(_slidingWindows.size());
     find_longest_train_month_row();
     find_train_start_row(longestTrainMonth_, 'M');
@@ -1399,7 +1412,7 @@ int main(int argc, const char *argv[]) {
             //        company.cal_MA_output();
             //        company.outputMATable();
             //        company.train("M2M");
-        company.train("debug", "2020-01-02", "2021-06-30");
+        company.train("2020-01-02", "2021-06-30");
             //        company.train("2012-01-04", "2012-12-28");
             //        company.print_train();
             //        company.instant_trade("2020-01-02", "2021-06-30", 5,20,5,20);
