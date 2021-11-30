@@ -331,20 +331,20 @@ void MA_GNQTS::Particle::measure(BetaMatrix &beta) {
 void MA_GNQTS::Particle::convert_bi_dec() {
     for (int i = 0, j = BUY1_BITS - 1; i < BUY1_BITS; i++, j--) {
         buy1_dec__ += pow(2, j) * buy1_bi__[i];
-        buy1_dec__++;
     }
+    buy1_dec__++;
     for (int i = 0, j = BUY2_BITS - 1; i < BUY2_BITS; i++, j--) {
         buy2_dec__ += pow(2, j) * buy2_bi__[i] + 1;
-        buy2_dec__++;
     }
+    buy2_dec__++;
     for (int i = 0, j = SELL1_BITS - 1; i < SELL1_BITS; i++, j--) {
         sell1_dec__ += pow(2, j) * sell1_bi__[i] + 1;
-        sell1_dec__++;
     }
+    sell1_dec__++;
     for (int i = 0, j = SELL2_BITS - 1; i < SELL2_BITS; i++, j--) {
         sell2_dec__ += pow(2, j) * sell2_bi__[i] + 1;
-        sell2_dec__++;
     }
+    sell2_dec__++;
 }
 
 void MA_GNQTS::Particle::record_buy_info(CompanyInfo::MATable &table, int i, int stockHold) {
@@ -1399,7 +1399,7 @@ int main(int argc, const char *argv[]) {
             //        company.cal_MA_output();
             //        company.outputMATable();
             //        company.train("M2M");
-        company.train("2020-01-02", "2021-06-30");
+        company.train("debug", "2020-01-02", "2021-06-30");
             //        company.train("2012-01-04", "2012-12-28");
             //        company.print_train();
             //        company.instant_trade("2020-01-02", "2021-06-30", 5,20,5,20);
