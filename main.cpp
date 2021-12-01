@@ -384,7 +384,7 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
     for (int i = startRow; i <= endRow; i++) {
         if (check_buy_cross(stockHold, table.MAtable__[i - 1][buy1_dec__], table.MAtable__[i - 1][buy2_dec__], table.MAtable__[i][buy1_dec__], table.MAtable__[i][buy2_dec__], i, endRow) && remain__ >= table.price__[i]) {
             stockHold = floor(remain__ / table.price__[i]);
-            remain__ = floor(remain__ - stockHold * table.price__[i]);
+            remain__ = remain__ - floor(stockHold * table.price__[i]);
             buyNum__++;
             if (isRecordOn__) {
                 record_buy_info(table, i, stockHold);
@@ -1418,8 +1418,8 @@ int main(int argc, const char *argv[]) {
         company.train("2020-01-02", "2021-06-30");
             //        company.train("2012-01-04", "2012-12-28");
             //        company.print_train();
-            //        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 20);
-            //        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 60);
+                    company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 20);
+                    company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 60);
         if (setCompany != "all") {
             break;
         }
