@@ -39,6 +39,8 @@ double _delta = 0.003;
 int _expNumber = 50;
 int _generationNumber = 10000;
 
+int _outputDecimal2 = 0;
+
 string _outputPath = _MA[_MAUse] + "_result";
 
 vector<vector<string>> read_data(path filePath) {
@@ -930,7 +932,17 @@ void CompanyInfo::MATable::create_MAtable() {
     for (int i = 0; i < days__; i++) {
         MAtable__[i] = new double[257];
     }
-    vector<path> MAFilePath = get_path(company__.MAType_ + "/" + company__.companyName_);
+    vector<path> MAFilePath;
+    if (_pricePath == "price.2") {
+        MAFilePath = get_path(company__.MAType_ + ".2/" + company__.companyName_);
+    }
+    else {
+        MAFilePath = get_path(company__.MAType_ + "/" + company__.companyName_);
+    }
+    if (MAFilePath.size() == 0) {
+        cout << "no MA file" << endl;
+        exit(1);
+    }
     for (int i = 0; i < MAFilePath.size(); i++) {
         vector<vector<string>> MAFile = read_data(MAFilePath[i]);
         if (int(MAFile.size()) - days__ < 0) {
@@ -1302,15 +1314,19 @@ void CompanyInfo::store_date_price(path priceFilePath) {
             j++;
         }
     }
-    /*create_directories("price.2");
-    ofstream out;
-    out.open("price.2/" + companyName_ + ".csv");
-    out << endl;
-    for (int i = 0; i < totalDays_; i++) {
-        out << date_[i] + ",,,,";
-        out << fixed << setprecision(2) << price_[i] << endl;
+    if (_outputDecimal2 == 1) {
+        create_directories("price.2");
+        ofstream out;
+        out.open("price.2/" + companyName_ + ".csv");
+        out << endl;
+        for (int i = 0; i < totalDays_; i++) {
+            out << date_[i] + ",,,,";
+            out << fixed << setprecision(2) << price_[i] << endl;
+        }
+        out.close();
+        create_directories(MAOutputPath_);
+        output_MA();
     }
-    out.close();*/
 }
 
 void CompanyInfo::store_MA_to_vector() {
@@ -1368,8 +1384,16 @@ void CompanyInfo::output_MA() {
                     //                    }
                     //                    out << fixed << setprecision(2) << date_[dateRow] + "," << MARangePriceSum / MA << endl;
                     //                }
-                for (int i = 0, dateRow = MA - 1; i < MAtable_[MA].size(); i++, dateRow++) {
-                    out << fixed << setprecision(2) << date_[dateRow] + "," << MAtable_[MA][i] << endl;
+                
+                if (_outputDecimal2 == 1) {
+                    for (int i = 0, dateRow = MA - 1; i < MAtable_[MA].size(); i++, dateRow++) {
+                        out << fixed << setprecision(2) << date_[dateRow] + "," << MAtable_[MA][i] << endl;
+                    }
+                }
+                else {
+                    for (int i = 0, dateRow = MA - 1; i < MAtable_[MA].size(); i++, dateRow++) {
+                        out << date_[dateRow] + "," << MAtable_[MA][i] << endl;
+                    }
                 }
                 out.close();
             }
@@ -1593,6 +1617,9 @@ void CompanyInfo::instant_trade(string startDate, string endDate, int buy1, int 
 }
 
 CompanyInfo::CompanyInfo(path filePath, string MAUse) : companyName_(filePath.stem().string()), MAType_(MAUse), MAOutputPath_(MAType_ + "/" + companyName_), trainFilePath(_outputPath + "/" + companyName_ + "/train/"), testFilePath(_outputPath + "/" + companyName_ + "/test/"), windowNumber_(int(_slidingWindows.size())) {
+    if (_outputDecimal2 == 1) {
+        MAOutputPath_ = MAType_ + ".2/" + companyName_;
+    }
     store_date_price(filePath);
     create_folder();
     find_longest_train_month_row();
@@ -1628,9 +1655,10 @@ int main(int argc, const char *argv[]) {
 //        company.train("2020-01-02", "2021-06-30");
 //        company.test("M2M");
 //        company.print_test("YY2YY");
-        company.print_train("4W4");
-                    //company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 20);
-                     //company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 60);
+//        company.print_train("4W4");
+//        CompanyInfo::MATable table(company);
+//        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 20);
+//        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 60);
         if (setCompany != "all") {
             break;
         }
