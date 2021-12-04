@@ -98,7 +98,7 @@ public:
         
         void create_MAtable();
         void round_MATable_obj();
-        MATable(CompanyInfo &);
+        MATable(CompanyInfo &company);
         ~MATable();
     };
     class TrainWindow {
@@ -111,16 +111,16 @@ public:
         CompanyInfo &company__;
         
         void find_train_interval();
-        void find_first_train_start_row(int, char);
-        void find_M_train(vector<string>, char);
-        void find_D_train(vector<string>, char);
-        void find_W_train(vector<string>, char);
-        static int cal_weekday(string);
-        static bool is_week_changed(CompanyInfo &, int, int, int, int);
-        static vector<string> find_train_and_test_len(string, char &);
-        static void check_startRowSize_endRowSize(int, int);
+        void find_first_train_start_row(int trainPeriodLength, char delimiter);
+        void find_M_train(vector<string> trainType, char delimiter);
+        void find_D_train(vector<string> trainType, char delimiter);
+        void find_W_train(vector<string> trainType, char delimiter);
+        static int cal_weekday(string date);
+        static bool is_week_changed(CompanyInfo &comapny, int bigWeekDay, int smallWeekDay, int big_i, int small_i);
+        static vector<string> find_train_and_test_len(string window, char &delimiter);
+        static void check_startRowSize_endRowSize(int startRowSize, int endRowSize);
         void print_train();
-        TrainWindow(string, CompanyInfo &);
+        TrainWindow(string window, CompanyInfo &company);
     };
     class TestWindow {
     public:
@@ -130,11 +130,11 @@ public:
         CompanyInfo &company__;
         
         void find_test_interval();
-        void find_M_test(int);
-        void find_D_test(int);
-        void find_W_test(int);
+        void find_M_test(int testLength);
+        void find_D_test(int testLength);
+        void find_W_test(int testLength);
         void print_test();
-        TestWindow(string, CompanyInfo &);
+        TestWindow(string window, CompanyInfo &company);
     };
     string companyName_;
     string MAType_;
@@ -153,19 +153,19 @@ public:
     string trainFilePath;
     string testFilePath;
     
-    void store_date_price(path);
+    void store_date_price(path priceFilePath);
     void create_folder();
     void store_MA_to_vector();
     void output_MA();
-    void train(string, string, string, bool, bool);
-    void find_train_start_row(int, char);
-    void print_train(string);
-    void test(string);
-    void print_test(string);
+    void train(string targetWindow = "all", string startDate = "", string endDate = "", bool debug = false, bool record = false);
+    void find_train_start_row(int trainPeriodLength, char delimiter);
+    void print_train(string targetWindow = "all");
+    void test(string targetWindow = "all");
+    void print_test(string targetWindow = "all");
     void find_longest_train_month_row();
     void output_MATable();
-    void instant_trade(string, string, int, int, int, int);
-    CompanyInfo(path, string);
+    void instant_trade(string startDate, string endDate, int buy1, int buy2, int sell1, int sell2);
+    CompanyInfo(path filePath, string MAUse);
     ~CompanyInfo();
 };
 
@@ -179,7 +179,7 @@ public:
         vector<double> sell2__;
         
         void initilaize();
-        void print(ofstream &, bool);
+        void print(ofstream &out, bool debug);
         BetaMatrix();
     };
     class Particle {
@@ -202,17 +202,17 @@ public:
         int exp__;
         int bestCnt__;
         
-        void print(ofstream &, bool);
-        void initialize(double);
-        void measure(BetaMatrix &);
+        void print(ofstream &out, bool debug);
+        void initialize(double RoR = 0);
+        void measure(BetaMatrix &beta);
         void convert_bi_dec();
-        void record_buy_info(CompanyInfo::MATable &, int, int);
-        void record_sell_info(CompanyInfo::MATable &, int, int);
+        void record_buy_info(CompanyInfo::MATable &table, int i, int stockHold);
+        void record_sell_info(CompanyInfo::MATable &table, int i, int stockHold);
         void record_last_info();
-        static bool check_buy_cross(int, double, double, double, double, int, int);
-        static bool check_sell_cross(int, double, double, double, double, int, int);
-        void trade(int, int, CompanyInfo::MATable &, bool);
-        void print_trade_record(ofstream &);
+        static bool check_buy_cross(int stockHold, double MAbuy1PreDay, double MAbuy2PreDay, double MAbuy1Today, double MAbuy2Today, int i, int endRow);
+        static bool check_sell_cross(int stockHold, double MAsell1PreDay, double MAsell2PreDay, double MAsell1Today, double MAsell2Today, int i, int endRow);
+        void trade(int, int, CompanyInfo::MATable &, bool lastRecord = false);
+        void print_trade_record(ofstream &out);
         
         Particle(int buy1 = 0, int buy2 = 0, int sell1 = 0, int sell2 = 0, bool on = false);
     };
@@ -227,35 +227,109 @@ public:
     int actualEndRow_{-1};
     CompanyInfo::MATable &MAtable_;
     CompanyInfo &company_;
-        //    void initialize_local_particles();
-        //    void measure(Particle &);
-        //    void convert_bi_to_dec(Particle &);
-        //    void GNQTStrade(int, int, Particle &);
+    
     void update_global();
-        //    void print_all_particle();
-        //    void print_betaMatrix();
-    void find_new_row(string, string);
-    void set_row_and_break_conditioin(string, int &, int &, CompanyInfo::TrainWindow &);
+    void find_new_row(string startDate, string endDate);
+    void set_row_and_break_conditioin(string startDate, int &windowIndex, int &intervalIndex, CompanyInfo::TrainWindow &window);
     void GNQTS();
     void GQTS();
     void QTS();
     void print_debug_beta(bool debug, ofstream &out);
     void update_best();
     void is_record_on(bool record);
-    CompanyInfo::TrainWindow set_wondow(string &, string &, int &windowIndex);
+    CompanyInfo::TrainWindow set_wondow(string &startDate, string &targetWindow, int &windowIndex);
     ofstream set_debug_file(bool debug);
-    void print_debug_exp(bool, int, ofstream &);
-    void print_debug_gen(bool, int, ofstream &);
-    void print_debug_particle(bool, int, ofstream &);
-    void store_exp_gen(int, int);
-    void start_gen(bool, int, int, ofstream &);
-    void start_exp(bool, int, ofstream &);
-    void print_train_data(CompanyInfo &, CompanyInfo::MATable &, string);
+    void print_debug_exp(bool debug, int expCnt, ofstream &out);
+    void print_debug_gen(bool debug, int generation, ofstream &out);
+    void print_debug_particle(bool debug, int i, ofstream &out);
+    void store_exp_gen(int expCnt, int generation);
+    void start_gen(bool debug, int expCnt, int generation, ofstream &out);
+    void start_exp(bool debug, int expCnt, ofstream &out);
+    void print_train_data(CompanyInfo &company, CompanyInfo::MATable &table, string trainPath);
     
-    MA_GNQTS(CompanyInfo &, CompanyInfo::MATable &, string, string, string, bool, bool);
+    MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record);
 };
 
-void MA_GNQTS::Particle::initialize(double RoR = 0) {
+class CalculateTest {
+public:
+    MA_GNQTS::Particle p_;
+    CompanyInfo &company_;
+    CompanyInfo::MATable &table_;
+    
+    CompanyInfo::TestWindow set_window(string &actualWindow, string &targetWindow, int &windowIndex);
+    void check_exception(vector<path> &eachTrainFilePath, CompanyInfo::TestWindow &window);
+    void print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window);
+    
+    CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow);
+};
+
+CompanyInfo::TestWindow CalculateTest::set_window(string &actualWindow, string &targetWindow, int &windowIndex) {
+    if (targetWindow != "all") {
+        actualWindow = targetWindow;
+        windowIndex = company_.windowNumber_;
+    }
+    CompanyInfo::TestWindow window(actualWindow, company_);
+    return window;
+}
+
+void CalculateTest::check_exception(vector<path> &eachTrainFilePath, CompanyInfo::TestWindow &window) {
+    if (eachTrainFilePath.size() != window.interval__.size() / 2) {
+        cout << window.windowName__ + " test interval number is not equal to train fle number" << endl;
+        exit(1);
+    }
+}
+
+void CalculateTest::print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window) {
+    ofstream out;
+    out.open(company_.testFilePath + window.windowName__ + "/" + table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]] + ".csv");
+    out << "algo," + _algo[_algoUse] << endl;
+    out << "delta," << _delta << endl;
+    out << "exp," << _expNumber << endl;
+    out << "gen," << _generationNumber << endl;
+    out << "p amount," << PARTICAL_AMOUNT << endl;
+    out << endl;
+    out << "initial capital," << TOTAL_CP_LV << endl;
+    out << "final capital," << p.remain__ << endl;
+    out << "final return," << p.remain__ - TOTAL_CP_LV << endl;
+    out << endl;
+    out << "buy1," << p.buy1_dec__ << endl;
+    out << "buy2," << p.buy2_dec__ << endl;
+    out << "sell1," << p.sell1_dec__ << endl;
+    out << "sell2," << p.sell2_dec__ << endl;
+    out << "trade," << p.sellNum__ << endl;
+    out << "return rate," << p.RoR__ << "%" << endl;
+    out << endl;
+    out << "best exp," << endl;
+    out << "best gen," << endl;
+    out << "best cnt," << endl;
+    out << endl;
+    p.print_trade_record(out);
+    out.close();
+}
+
+CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow) : company_(company), table_(table) {
+    for (int windowIndex{0}; windowIndex < company_.windowNumber_; windowIndex++) {
+        string actualWindow = _slidingWindows[windowIndex];
+        if (actualWindow != "A2A") {
+            CompanyInfo::TestWindow window = set_window(actualWindow, targetWindow, windowIndex);
+            vector<path> eachTrainFilePath = get_path(company_.trainFilePath + window.windowName__);
+            for (int intervalIndex{0}, trainFileIndex{0}; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
+                check_exception(eachTrainFilePath, window);
+                vector<vector<string>> thisTrainFile = read_data(eachTrainFilePath[trainFileIndex]);
+                p_.initialize();
+                p_.buy1_dec__ = stoi(thisTrainFile[10][1]);
+                p_.buy2_dec__ = stoi(thisTrainFile[11][1]);
+                p_.sell1_dec__ = stoi(thisTrainFile[12][1]);
+                p_.sell2_dec__ = stoi(thisTrainFile[13][1]);
+                MA_GNQTS::Particle p(stoi(thisTrainFile[10][1]), stoi(thisTrainFile[11][1]), stoi(thisTrainFile[12][1]), stoi(thisTrainFile[13][1]), true);
+                p.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
+                print_test_data(intervalIndex, p, window);
+            }
+        }
+    }
+}
+
+void MA_GNQTS::Particle::initialize(double RoR) {
     fill(buy1_bi__.begin(), buy1_bi__.end(), 0);
     fill(buy2_bi__.begin(), buy2_bi__.end(), 0);
     fill(sell1_bi__.begin(), sell1_bi__.end(), 0);
@@ -277,7 +351,7 @@ void MA_GNQTS::Particle::initialize(double RoR = 0) {
 void MA_GNQTS::Particle::measure(BetaMatrix &beta) {
     double r;
     for_each(buy1_bi__.begin(), buy1_bi__.end(), [&, j = 0](auto &i) mutable {
-        r = rand() / (double)RAND_MAX;
+        r = (double)rand() / (double)RAND_MAX;
         if (r < beta.buy1__[j++]) {
             i = 1;
         }
@@ -286,7 +360,7 @@ void MA_GNQTS::Particle::measure(BetaMatrix &beta) {
         }
     });
     for_each(buy2_bi__.begin(), buy2_bi__.end(), [&, j = 0](auto &i) mutable {
-        r = rand() / (double)RAND_MAX;
+        r = (double)rand() / (double)RAND_MAX;
         if (r < beta.buy2__[j++]) {
             i = 1;
         }
@@ -295,7 +369,7 @@ void MA_GNQTS::Particle::measure(BetaMatrix &beta) {
         }
     });
     for_each(sell1_bi__.begin(), sell1_bi__.end(), [&, j = 0](auto &i) mutable {
-        r = rand() / (double)RAND_MAX;
+        r = (double)rand() / (double)RAND_MAX;
         if (r < beta.sell1__[j++]) {
             i = 1;
         }
@@ -304,7 +378,7 @@ void MA_GNQTS::Particle::measure(BetaMatrix &beta) {
         }
     });
     for_each(sell2_bi__.begin(), sell2_bi__.end(), [&, j = 0](auto &i) mutable {
-        r = rand() / (double)RAND_MAX;
+        r = (double)rand() / (double)RAND_MAX;
         if (r < beta.sell2__[j++]) {
             i = 1;
         }
@@ -393,7 +467,7 @@ bool MA_GNQTS::Particle::check_sell_cross(int stockHold, double MAsell1PreDay, d
     return stockHold != 0 && ((MAsell1PreDay >= MAsell2PreDay && MAsell1Today < MAsell2Today) || i == endRow);
 }
 
-void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord = false) {
+void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord) {
     int stockHold{0};
     if (isRecordOn__) {
         tradeRecord__.push_back(",date,price,preday 1,preday 2,today 1,today 2,stockHold,remain,capital lv\r");
@@ -460,10 +534,6 @@ void MA_GNQTS::Particle::print(ofstream &out, bool debug) {
         cout << "|";
         cout << RoR__ << "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
     }
-        //    cout << buyNum__ << "," << sellNum__ << endl;
-        //    for (auto i : tradeRecord__) {
-        //        cout << i;
-        //    }
 }
 
 MA_GNQTS::Particle::Particle(int buy1, int buy2, int sell1, int sell2, bool on) : buy1_bi__(BUY1_BITS, 0), buy2_bi__(BUY2_BITS, 0), sell1_bi__(SELL1_BITS, 0), sell2_bi__(SELL1_BITS, 0), buy1_dec__(buy1), buy2_dec__(buy2), sell1_dec__(sell1), sell2_dec__(sell2), isRecordOn__(on) {
@@ -1394,24 +1464,9 @@ void CompanyInfo::output_MA() {
     }
 }
 
-void CompanyInfo::train(string targetWindow = "all", string startDate = "", string endDate = "", bool debug = false, bool record = false) {
+void CompanyInfo::train(string targetWindow, string startDate, string endDate, bool debug, bool record) {
     MATable table(*this);
         //==========如果有指定日期，將window設定A2A，這樣就不用找每個區間，並將開始結束日期設定
-        //    if (startDate.length() != endDate.length() && startDate != "debug") {
-        //        endDate = startDate;
-        //        startDate = targetWindow;
-        //        targetWindow = "A2A";
-        //    }
-        //    else if (targetWindow == "debug") {
-        //        debug = true;
-        //        record = false;
-        //        targetWindow = "A2A";
-        //    }
-        //    else if (targetWindow != "all" && startDate == "debug") {
-        //        startDate = "";
-        //        debug = true;
-        //    }
-    
     if (targetWindow == "debug") {
         debug = true;
         if (startDate.length() == 10 && endDate.length() == 10) {
@@ -1509,7 +1564,7 @@ void CompanyInfo::output_MATable() {
     out.close();
 }
 
-void CompanyInfo::print_train(string targetWindow = "all") {
+void CompanyInfo::print_train(string targetWindow) {
     if (targetWindow == "all") {
         for_each(_slidingWindows.begin(), _slidingWindows.end(), [&](auto i) {
             TrainWindow window(i, *this);
@@ -1522,79 +1577,12 @@ void CompanyInfo::print_train(string targetWindow = "all") {
     }
 }
 
-class CalculateTest {
-public:
-    CompanyInfo &company_;
-    CompanyInfo::MATable &table_;
-    
-    CompanyInfo::TestWindow set_window(std::string &actualWindow, const std::string &targetWindow, int &windowIndex) {
-        if (targetWindow != "all") {
-            actualWindow = targetWindow;
-            windowIndex = company_.windowNumber_;
-        }
-        CompanyInfo::TestWindow window(actualWindow, company_);
-        return window;
-    }
-    
-    void check_exception(const vector<std::filesystem::path> &eachTrainFilePath, const CompanyInfo::TestWindow &window) {
-        if (eachTrainFilePath.size() != window.interval__.size() / 2) {
-            cout << window.windowName__ + " test interval number is not equal to train fle number" << endl;
-            exit(1);
-        }
-    }
-    
-    void print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window) {
-        ofstream out;
-        out.open(company_.testFilePath + window.windowName__ + "/" + table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]] + ".csv");
-        out << "algo," + _algo[_algoUse] << endl;
-        out << "delta," << _delta << endl;
-        out << "exp," << _expNumber << endl;
-        out << "gen," << _generationNumber << endl;
-        out << "p amount," << PARTICAL_AMOUNT << endl;
-        out << endl;
-        out << "initial capital," << TOTAL_CP_LV << endl;
-        out << "final capital," << p.remain__ << endl;
-        out << "final return," << p.remain__ - TOTAL_CP_LV << endl;
-        out << endl;
-        out << "buy1," << p.buy1_dec__ << endl;
-        out << "buy2," << p.buy2_dec__ << endl;
-        out << "sell1," << p.sell1_dec__ << endl;
-        out << "sell2," << p.sell2_dec__ << endl;
-        out << "trade," << p.sellNum__ << endl;
-        out << "return rate," << p.RoR__ << "%" << endl;
-        out << endl;
-        out << "best exp," << endl;
-        out << "best gen," << endl;
-        out << "best cnt," << endl;
-        out << endl;
-        p.print_trade_record(out);
-        out.close();
-    }
-    
-    CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow) : company_(company), table_(table) {
-        for (int windowIndex{0}; windowIndex < company_.windowNumber_; windowIndex++) {
-            string actualWindow = _slidingWindows[windowIndex];
-            if (actualWindow != "A2A") {
-                CompanyInfo::TestWindow window = set_window(actualWindow, targetWindow, windowIndex);
-                vector<path> eachTrainFilePath = get_path(company_.trainFilePath + window.windowName__);
-                for (int intervalIndex{0}, trainFileIndex{0}; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
-                    check_exception(eachTrainFilePath, window);
-                    vector<vector<string>> thisTrainFile = read_data(eachTrainFilePath[trainFileIndex]);
-                    MA_GNQTS::Particle p(stoi(thisTrainFile[10][1]), stoi(thisTrainFile[11][1]), stoi(thisTrainFile[12][1]), stoi(thisTrainFile[13][1]), true);
-                    p.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
-                    print_test_data(intervalIndex, p, window);
-                }
-            }
-        }
-    }
-};
-
-void CompanyInfo::test(string targetWindow = "all") {
+void CompanyInfo::test(string targetWindow) {
     MATable table(*this);
     CalculateTest runTest(*this, table, targetWindow);
 }
 
-void CompanyInfo::print_test(string targetWindow = "all") {
+void CompanyInfo::print_test(string targetWindow) {
     if (targetWindow == "all") {
         for_each(_slidingWindows.begin(), _slidingWindows.end(), [&](auto i) {
             TestWindow window(i, *this);
@@ -1678,9 +1666,10 @@ int main(int argc, const char *argv[]) {
             //        company.outputMATable();
             //        company.train("M2M");
             //company.train("debug", "2020-01-02", "2021-06-30");
-//        company.train("M2M");
+            //        company.train("M2M");
             //        company.test("M2M");
-                    company.print_test("2W2");
+        company.print_train();
+        company.print_test();
             //        company.print_test("YY2YY");
             //        company.print_train("2W2");
             //        CompanyInfo::MATable table(company);
