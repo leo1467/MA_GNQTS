@@ -54,15 +54,14 @@ vector<vector<string>> read_data(path filePath) {
     string row;
     string cell;
     vector<string> oneRow;
-    while (infile) {
-        getline(infile, row);
+    while (getline(infile, row)) {
         stringstream lineStream(row);
-        if (row.length() != 0) {
             while (getline(lineStream, cell, ',')) {
-                oneRow.push_back(cell);
+                if (cell != "\r") {
+                    oneRow.push_back(cell);
+                }
             }
             data.push_back(oneRow);
-        }
         row.clear();
         cell.clear();
         oneRow.clear();
@@ -1534,38 +1533,68 @@ void CompanyInfo::print_train(string targetWindow = "all") {
     }
 }
 
-void CompanyInfo::test(string targetWindow = "all") {
-    MATable table(*this);
-    if (targetWindow != "all") {
-        TestWindow window(targetWindow, *this);
+class CalculateTest {
+public:
+    CompanyInfo &company_;
+    CompanyInfo::MATable &table_;
+    
+    CompanyInfo::TestWindow set_window(std::string &actualWindow, const std::string &targetWindow, int &windowIndex) {
+        if (targetWindow != "all") {
+            actualWindow = targetWindow;
+            windowIndex = company_.windowNumber_;
+        }
+        CompanyInfo::TestWindow window(actualWindow, company_);
+        return window;
     }
-    else if (targetWindow == "all") {
-        for (auto it = _slidingWindows.begin(); it != _slidingWindows.end(); it++) {
-            if (*it != "A2A") {
-                TestWindow window(*it, *this);
-                vector<path> trainFile = get_path(trainFilePath + *it);
-                for (auto filePath = trainFile.begin(); filePath != trainFile.end(); filePath++) {
-                    if (trainFile.size() != window.interval__.size() / 2) {
-                        cout << "test interval number is not equal to train fle number" << endl;
-                        exit(0);
+    
+    CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow) : company_(company),  table_(table){
+        for (int windowIndex{0}; windowIndex < company_.windowNumber_; windowIndex++) {
+            string actualWindow = _slidingWindows[windowIndex];
+            if (actualWindow != "A2A") {
+                CompanyInfo::TestWindow window = set_window(actualWindow, targetWindow, windowIndex);
+                vector<path> eachTrainFilePath = get_path(company_.trainFilePath + window.windowName__);
+                for (int intervalIndex{0}, trainFileIndex{0}; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
+                    if (eachTrainFilePath.size() != window.interval__.size() / 2) {
+                        cout << window.windowName__ + " test interval number is not equal to train fle number" << endl;
+                        exit(1);
                     }
-                    vector<vector<string>> file = read_data(*filePath);
-                    MA_GNQTS::Particle p;
-                    p.buy1_dec__ = stoi(file[10][1]);
-                    p.buy2_dec__ = stoi(file[11][1]);
-                    p.sell1_dec__ = stoi(file[12][1]);
-                    p.sell2_dec__ = stoi(file[13][1]);
+                    vector<vector<string>> thisTrainFile = read_data(eachTrainFilePath[trainFileIndex]);
+                    MA_GNQTS::Particle p(stoi(thisTrainFile[10][1]), stoi(thisTrainFile[11][1]), stoi(thisTrainFile[12][1]), stoi(thisTrainFile[13][1]), true);
+                    p.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
                     ofstream out;
-                    
-                    p.print(out, false);
+                    out.open(company_.testFilePath + window.windowName__ + "/" + table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]] + ".csv");
+                    out << "algo," + _algo[_algoUse] << endl;
+                    out << "delta," << _delta << endl;
+                    out << "exp," << _expNumber << endl;
+                    out << "gen," << _generationNumber << endl;
+                    out << "p amount," << PARTICAL_AMOUNT << endl;
+                    out << endl;
+                    out << "initial capital," << TOTAL_CP_LV << endl;
+                    out << "final capital," << p.remain__ << endl;
+                    out << "final return," << p.remain__ - TOTAL_CP_LV << endl;
+                    out << endl;
+                    out << "buy1," << p.buy1_dec__ << endl;
+                    out << "buy2," << p.buy2_dec__ << endl;
+                    out << "sell1," << p.sell1_dec__ << endl;
+                    out << "sell2," << p.sell2_dec__ << endl;
+                    out << "trade," << p.sellNum__ << endl;
+                    out << "return rate," << p.RoR__ << "%" << endl;
+                    out << endl;
+                    out << "best exp," << endl;
+                    out << "best gen," <<  endl;
+                    out << "best cnt," << endl;
+                    out << endl;
+                    p.print_trade_record(out);
+                    out.close();
                 }
             }
         }
     }
-    else {
-        cout << "no such test window" << endl;
-        exit(1);
-    }
+};
+
+void CompanyInfo::test(string targetWindow = "all") {
+    MATable table(*this);
+    CalculateTest runTest(*this, table, targetWindow);
 }
 
 void CompanyInfo::print_test(string targetWindow = "all") {
@@ -1652,10 +1681,10 @@ int main(int argc, const char *argv[]) {
             //        company.outputMATable();
             //        company.train("M2M");
         //company.train("debug", "2020-01-02", "2021-06-30");
-//        company.train("2020-01-02", "2021-06-30");
-//        company.test("M2M");
+//        company.train("M2M");
+        company.test("M2M");
 //        company.print_test("YY2YY");
-//        company.print_train("4W4");
+//        company.print_train("M2M");
 //        CompanyInfo::MATable table(company);
 //        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 20);
 //        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 60);
