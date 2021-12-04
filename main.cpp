@@ -854,15 +854,6 @@ void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &tabl
     cout << best_.RoR__ << "%" << endl;
 }
 
-void CompanyInfo::MATable::round_MATable_obj() {
-    for (int i = 0; i < days__; i++) {
-        price__[i] = round(price__[i], 2);
-        for (int j = 1; j < 257; j++) {
-            MAtable__[i][j] = round(MAtable__[i][j], 2);
-        }
-    }
-}
-
 MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record) : particles_(PARTICAL_AMOUNT), MAtable_(table), company_(company) {
         //table.round_MATable_obj();
     find_new_row(startDate, endDate);  //如果有設定特定的日期，這邊要重新找row
@@ -915,6 +906,15 @@ void CompanyInfo::MATable::create_MAtable() {
         }
         for (int j = 0, k = int(MAFile.size()) - days__; k < MAFile.size(); j++, k++) {
             MAtable__[j][i + 1] = stod(MAFile[k][1]);
+        }
+    }
+}
+
+void CompanyInfo::MATable::round_MATable_obj() {
+    for (int i = 0; i < days__; i++) {
+        price__[i] = round(price__[i], 2);
+        for (int j = 1; j < 257; j++) {
+            MAtable__[i][j] = round(MAtable__[i][j], 2);
         }
     }
 }
@@ -1536,6 +1536,41 @@ public:
         return window;
     }
     
+    void check_exception(const vector<std::filesystem::path> &eachTrainFilePath, const CompanyInfo::TestWindow &window) {
+        if (eachTrainFilePath.size() != window.interval__.size() / 2) {
+            cout << window.windowName__ + " test interval number is not equal to train fle number" << endl;
+            exit(1);
+        }
+    }
+    
+    void print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window) {
+        ofstream out;
+        out.open(company_.testFilePath + window.windowName__ + "/" + table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]] + ".csv");
+        out << "algo," + _algo[_algoUse] << endl;
+        out << "delta," << _delta << endl;
+        out << "exp," << _expNumber << endl;
+        out << "gen," << _generationNumber << endl;
+        out << "p amount," << PARTICAL_AMOUNT << endl;
+        out << endl;
+        out << "initial capital," << TOTAL_CP_LV << endl;
+        out << "final capital," << p.remain__ << endl;
+        out << "final return," << p.remain__ - TOTAL_CP_LV << endl;
+        out << endl;
+        out << "buy1," << p.buy1_dec__ << endl;
+        out << "buy2," << p.buy2_dec__ << endl;
+        out << "sell1," << p.sell1_dec__ << endl;
+        out << "sell2," << p.sell2_dec__ << endl;
+        out << "trade," << p.sellNum__ << endl;
+        out << "return rate," << p.RoR__ << "%" << endl;
+        out << endl;
+        out << "best exp," << endl;
+        out << "best gen," << endl;
+        out << "best cnt," << endl;
+        out << endl;
+        p.print_trade_record(out);
+        out.close();
+    }
+    
     CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow) : company_(company), table_(table) {
         for (int windowIndex{0}; windowIndex < company_.windowNumber_; windowIndex++) {
             string actualWindow = _slidingWindows[windowIndex];
@@ -1543,38 +1578,11 @@ public:
                 CompanyInfo::TestWindow window = set_window(actualWindow, targetWindow, windowIndex);
                 vector<path> eachTrainFilePath = get_path(company_.trainFilePath + window.windowName__);
                 for (int intervalIndex{0}, trainFileIndex{0}; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
-                    if (eachTrainFilePath.size() != window.interval__.size() / 2) {
-                        cout << window.windowName__ + " test interval number is not equal to train fle number" << endl;
-                        exit(1);
-                    }
+                    check_exception(eachTrainFilePath, window);
                     vector<vector<string>> thisTrainFile = read_data(eachTrainFilePath[trainFileIndex]);
                     MA_GNQTS::Particle p(stoi(thisTrainFile[10][1]), stoi(thisTrainFile[11][1]), stoi(thisTrainFile[12][1]), stoi(thisTrainFile[13][1]), true);
                     p.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
-                    ofstream out;
-                    out.open(company_.testFilePath + window.windowName__ + "/" + table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]] + ".csv");
-                    out << "algo," + _algo[_algoUse] << endl;
-                    out << "delta," << _delta << endl;
-                    out << "exp," << _expNumber << endl;
-                    out << "gen," << _generationNumber << endl;
-                    out << "p amount," << PARTICAL_AMOUNT << endl;
-                    out << endl;
-                    out << "initial capital," << TOTAL_CP_LV << endl;
-                    out << "final capital," << p.remain__ << endl;
-                    out << "final return," << p.remain__ - TOTAL_CP_LV << endl;
-                    out << endl;
-                    out << "buy1," << p.buy1_dec__ << endl;
-                    out << "buy2," << p.buy2_dec__ << endl;
-                    out << "sell1," << p.sell1_dec__ << endl;
-                    out << "sell2," << p.sell2_dec__ << endl;
-                    out << "trade," << p.sellNum__ << endl;
-                    out << "return rate," << p.RoR__ << "%" << endl;
-                    out << endl;
-                    out << "best exp," << endl;
-                    out << "best gen," << endl;
-                    out << "best cnt," << endl;
-                    out << endl;
-                    p.print_trade_record(out);
-                    out.close();
+                    print_test_data(intervalIndex, p, window);
                 }
             }
         }
@@ -1670,9 +1678,9 @@ int main(int argc, const char *argv[]) {
             //        company.outputMATable();
             //        company.train("M2M");
             //company.train("debug", "2020-01-02", "2021-06-30");
-        company.train("M2M");
+//        company.train("M2M");
             //        company.test("M2M");
-            //        company.print_test("2W2");
+                    company.print_test("2W2");
             //        company.print_test("YY2YY");
             //        company.print_train("2W2");
             //        CompanyInfo::MATable table(company);
