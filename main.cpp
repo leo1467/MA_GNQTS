@@ -321,9 +321,8 @@ CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, 
                 p_.buy2_dec__ = stoi(thisTrainFile[11][1]);
                 p_.sell1_dec__ = stoi(thisTrainFile[12][1]);
                 p_.sell2_dec__ = stoi(thisTrainFile[13][1]);
-                MA_GNQTS::Particle p(stoi(thisTrainFile[10][1]), stoi(thisTrainFile[11][1]), stoi(thisTrainFile[12][1]), stoi(thisTrainFile[13][1]), true);
-                p.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
-                print_test_data(intervalIndex, p, window);
+                p_.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
+                print_test_data(intervalIndex, p_, window);
             }
         }
     }
@@ -1667,12 +1666,13 @@ int main(int argc, const char *argv[]) {
             //        company.train("M2M");
             //company.train("debug", "2020-01-02", "2021-06-30");
             //        company.train("M2M");
-            //        company.test("M2M");
-        company.print_train();
-        company.print_test();
+//        company.test("M2M");
+//        company.print_train();
+//        company.print_test();
             //        company.print_test("YY2YY");
             //        company.print_train("2W2");
             //        CompanyInfo::MATable table(company);
+//                    company.instant_trade("2012-01-02", "2012-01-31", 18, 16, 78, 61);
             //        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 20);
             //        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 60);
         if (setCompany != "all") {
