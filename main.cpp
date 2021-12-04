@@ -321,6 +321,7 @@ CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, 
                 p_.buy2_dec__ = stoi(thisTrainFile[11][1]);
                 p_.sell1_dec__ = stoi(thisTrainFile[12][1]);
                 p_.sell2_dec__ = stoi(thisTrainFile[13][1]);
+                p_.isRecordOn__ = true;
                 p_.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
                 print_test_data(intervalIndex, p_, window);
             }
