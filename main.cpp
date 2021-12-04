@@ -56,12 +56,12 @@ vector<vector<string>> read_data(path filePath) {
     vector<string> oneRow;
     while (getline(infile, row)) {
         stringstream lineStream(row);
-            while (getline(lineStream, cell, ',')) {
-                if (cell != "\r") {
-                    oneRow.push_back(cell);
-                }
+        while (getline(lineStream, cell, ',')) {
+            if (cell != "\r") {
+                oneRow.push_back(cell);
             }
-            data.push_back(oneRow);
+        }
+        data.push_back(oneRow);
         row.clear();
         cell.clear();
         oneRow.clear();
@@ -128,7 +128,7 @@ public:
         string windowNameEx__;
         vector<int> interval__;
         CompanyInfo &company__;
-
+        
         void find_test_interval();
         void find_M_test(int);
         void find_D_test(int);
@@ -629,22 +629,6 @@ void MA_GNQTS::update_global() {
     }
 }
 
-    //void MA_GNQTS::print_all_particle() {
-    //    for (int i = 0; i < particles_.size(); i++) {
-    //        cout << "P:" << i << endl;
-    //        for_each(particles_[i].buy1_bi__.begin(), particles_[i].buy1_bi__.end(), [](auto i) { cout << i << ","; });
-    //        cout << "|";
-    //        for_each(particles_[i].buy2_bi__.begin(), particles_[i].buy2_bi__.end(), [](auto i) { cout << i << ","; });
-    //        cout << "|";
-    //        for_each(particles_[i].sell1_bi__.begin(), particles_[i].sell1_bi__.end(), [](auto i) { cout << i << ","; });
-    //        cout << "|";
-    //        for_each(particles_[i].sell2_bi__.begin(), particles_[i].sell2_bi__.end(), [](auto i) { cout << i << ","; });
-    //        cout << "|";
-    //        cout << particles_[i].RoR__ << "%" << endl;
-    //        cout << particles_[i].buy1_dec__ << "," << particles_[i].buy2_dec__ << "," << particles_[i].sell1_dec__ << "," << particles_[i].sell2_dec__ << endl;
-    //    }
-    //}
-
 void MA_GNQTS::BetaMatrix::initilaize() {
     fill(buy1__.begin(), buy1__.end(), 0.5);
     fill(buy2__.begin(), buy2__.end(), 0.5);
@@ -676,25 +660,6 @@ void MA_GNQTS::BetaMatrix::print(ofstream &out, bool debug) {
         cout << endl;
     }
 }
-
-    //void MA_GNQTS::print_betaMatrix() {
-    //    for (int i = 0; i < BUY1_BITS; i++) {
-    //        cout << betaMtrix_.buy1__[i] << ",";
-    //    }
-    //    cout << "|";
-    //    for (int i = 0; i < BUY2_BITS; i++) {
-    //        cout << betaMtrix_.buy2__[i] << ",";
-    //    }
-    //    cout << "|";
-    //    for (int i = 0; i < SELL1_BITS; i++) {
-    //        cout << betaMtrix_.sell1__[i] << ",";
-    //    }
-    //    cout << "|";
-    //    for (int i = 0; i < SELL2_BITS; i++) {
-    //        cout << betaMtrix_.sell2__[i] << ",";
-    //    }
-    //    cout << endl;
-    //}
 
 void MA_GNQTS::find_new_row(string startDate, string endDate) {
     if (startDate != "") {
@@ -855,7 +820,7 @@ void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &tabl
     }
     else {
         string delta = to_string(_delta);
-        delta.erase(delta.find_last_not_of('0') + 1, std::string::npos );
+        delta.erase(delta.find_last_not_of('0') + 1, std::string::npos);
         trainPath = company_.MAType_ + "_" + _algo[_algoUse] + "_" + delta + "_";
     }
     ofstream trainedData;
@@ -899,7 +864,7 @@ void CompanyInfo::MATable::round_MATable_obj() {
 }
 
 MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record) : particles_(PARTICAL_AMOUNT), MAtable_(table), company_(company) {
-    //table.round_MATable_obj();
+        //table.round_MATable_obj();
     find_new_row(startDate, endDate);  //如果有設定特定的日期，這邊要重新找row
     is_record_on(record);
     for (int windowIndex{0}; windowIndex < company.windowNumber_; windowIndex++) {
@@ -1128,7 +1093,7 @@ int CompanyInfo::TrainWindow::cal_weekday(string date) {
     int d = stoi(date.substr(8, 2));
     tm time_in = {0, 0, 0, d, m, y - 1900};
     time_t time_temp = mktime(&time_in);
-    const tm* time_out = localtime(&time_temp);
+    const tm *time_out = localtime(&time_temp);
     return time_out->tm_wday;
 }
 
@@ -1136,7 +1101,6 @@ bool CompanyInfo::TrainWindow::is_week_changed(CompanyInfo &comapny, int bigWeek
     return (bigWeekDay < smallWeekDay ||
             stoi(comapny.date_[big_i].substr(8, 2)) - stoi(comapny.date_[small_i].substr(8, 2)) >= 7 ||
             (stoi(comapny.date_[big_i].substr(8, 2)) < stoi(comapny.date_[small_i].substr(8, 2)) && stoi(comapny.date_[big_i].substr(8, 2)) + 30 - stoi(comapny.date_[small_i].substr(8, 2)) >= 7));
-
 }
 
 void CompanyInfo::TrainWindow::find_D_train(vector<string> trainType, char delimiter) {
@@ -1199,7 +1163,6 @@ CompanyInfo::TrainWindow::TrainWindow(string window, CompanyInfo &company) : win
     }
 }
 
-
 void CompanyInfo::TestWindow::find_test_interval() {
     char delimiter;
     vector<string> testType = TrainWindow::find_train_and_test_len(windowNameEx__, delimiter);
@@ -1251,7 +1214,7 @@ void CompanyInfo::TestWindow::find_D_test(int testLength) {
     for (int i = company__.testStartRow_; i <= company__.testEndRow_; i += testLength) {
         startRow.push_back(i);
     }
-    for (int i =  company__.testStartRow_ + testLength - 1; i < company__.testEndRow_; i += testLength) {
+    for (int i = company__.testStartRow_ + testLength - 1; i < company__.testEndRow_; i += testLength) {
         endRow.push_back(i);
     }
     if (startRow.size() > endRow.size()) {
@@ -1263,11 +1226,45 @@ void CompanyInfo::TestWindow::find_D_test(int testLength) {
         interval__.push_back(endRow[i]);
     }
 }
-//         void find_W_test(vector<string>, char);
+
 void CompanyInfo::TestWindow::find_W_test(int testLength) {
     vector<int> startRow, endRow;
+    int smallWeekDay{-1};
+    int bigWeekDay{-1};
+    startRow.push_back(company__.testStartRow_);
+    for (int i = company__.testStartRow_, j = 0; i < company__.testEndRow_; i++) {
+        smallWeekDay = TrainWindow::cal_weekday(company__.date_[i]);
+        bigWeekDay = TrainWindow::cal_weekday(company__.date_[i + 1]);
+        if (TrainWindow::is_week_changed(company__, bigWeekDay, smallWeekDay, i + 1, i)) {
+            j++;
+            if (j == testLength) {
+                startRow.push_back(i + 1);
+                j = 0;
+            }
+        }
+    }
+    
+    for (int i = company__.testStartRow_, j = 0; i <= company__.testEndRow_; i++) {
+        smallWeekDay = TrainWindow::cal_weekday(company__.date_[i]);
+        bigWeekDay = TrainWindow::cal_weekday(company__.date_[i + 1]);
+        if (TrainWindow::is_week_changed(company__, bigWeekDay, smallWeekDay, i + 1, i)) {
+            j++;
+            if (j == testLength) {
+                endRow.push_back(i);
+                j = 0;
+            }
+        }
+    }
+    if (startRow.size() > endRow.size()) {
+        endRow.push_back(company__.testEndRow_);
+    }
+    TrainWindow::check_startRowSize_endRowSize((int)startRow.size(), (int)endRow.size());
+    for (int i = 0; i < startRow.size(); i++) {
+        interval__.push_back(startRow[i]);
+        interval__.push_back(endRow[i]);
+    }
 }
-//         void print_test();
+
 void CompanyInfo::TestWindow::print_test() {
     cout << windowName__ + "=" + windowNameEx__ << endl;
     for (auto it = interval__.begin(); it != interval__.end(); it++) {
@@ -1275,7 +1272,7 @@ void CompanyInfo::TestWindow::print_test() {
     }
     cout << "==========" << endl;
 }
-//         TestWindow(string, CompanyInfo &);
+
 CompanyInfo::TestWindow::TestWindow(string window, CompanyInfo &company) : windowName__(window), company__(company), windowNameEx__(_slidingWindowsEX[distance(_slidingWindows.begin(), find(_slidingWindows.begin(), _slidingWindows.end(), windowName__))]) {
     find_test_interval();
     for (int &i : interval__) {
@@ -1376,14 +1373,6 @@ void CompanyInfo::output_MA() {
                     out.open(MAOutputPath_ + "/" + companyName_ + "_" + MAType_ + "_" + to_string(MA) + ".csv");
                         //                    out.open(companyName_ + "_" + MAType_ + "_" + to_string(MA) + ".csv");
                 }
-                    //                for (int dateRow = MA - 1; dateRow < totalDays_; dateRow++) {
-                    //                    double MARangePriceSum = 0;
-                    //                    for (int i = dateRow, j = MA; j > 0; i--, j--) {
-                    //                        MARangePriceSum += price_[i];
-                    //                    }
-                    //                    out << fixed << setprecision(2) << date_[dateRow] + "," << MARangePriceSum / MA << endl;
-                    //                }
-                
                 if (_outputDecimal2 == 1) {
                     for (int i = 0, dateRow = MA - 1; i < MAtable_[MA].size(); i++, dateRow++) {
                         out << fixed << setprecision(2) << date_[dateRow] + "," << MAtable_[MA][i] << endl;
@@ -1547,7 +1536,7 @@ public:
         return window;
     }
     
-    CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow) : company_(company),  table_(table){
+    CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow) : company_(company), table_(table) {
         for (int windowIndex{0}; windowIndex < company_.windowNumber_; windowIndex++) {
             string actualWindow = _slidingWindows[windowIndex];
             if (actualWindow != "A2A") {
@@ -1581,7 +1570,7 @@ public:
                     out << "return rate," << p.RoR__ << "%" << endl;
                     out << endl;
                     out << "best exp," << endl;
-                    out << "best gen," <<  endl;
+                    out << "best gen," << endl;
                     out << "best cnt," << endl;
                     out << endl;
                     p.print_trade_record(out);
@@ -1635,12 +1624,12 @@ void CompanyInfo::instant_trade(string startDate, string endDate, int buy1, int 
         exit(1);
     }
     MA_GNQTS::Particle p(buy1, buy2, sell1, sell2, true);
-    //table.round_MATable_obj();
+        //table.round_MATable_obj();
     p.trade(startRow, endRow, table, true);
     ofstream out;
     out.open(companyName_ + "_instantTrade_" + startDate + "_" + endDate + "_" + to_string(buy1) + "_" + to_string(buy2) + "_" + to_string(sell1) + "_" + to_string(sell2) + ".csv");
     out << "company,startDate,endDate,buy1,buy2,sell1,sell2" << endl;
-    out << companyName_+ "," + startDate + "," + endDate + "," + to_string(buy1) + "," + to_string(buy2) + "," + to_string(sell1) + "," + to_string(sell2) + "\r" << endl;
+    out << companyName_ + "," + startDate + "," + endDate + "," + to_string(buy1) + "," + to_string(buy2) + "," + to_string(sell1) + "," + to_string(sell2) + "\r" << endl;
     p.print_trade_record(out);
     out.close();
 }
@@ -1675,19 +1664,20 @@ int main(int argc, const char *argv[]) {
         }
         CompanyInfo company(targetPath, _MA[_MAUse]);
         cout << company.companyName_ << endl;
-        //company.output_MA();
+            //company.output_MA();
             //        company.store_MA_to_vector();
             //        company.cal_MA_output();
             //        company.outputMATable();
             //        company.train("M2M");
-        //company.train("debug", "2020-01-02", "2021-06-30");
-//        company.train("M2M");
-        company.test("M2M");
-//        company.print_test("YY2YY");
-//        company.print_train("M2M");
-//        CompanyInfo::MATable table(company);
-//        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 20);
-//        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 60);
+            //company.train("debug", "2020-01-02", "2021-06-30");
+        company.train("M2M");
+            //        company.test("M2M");
+            //        company.print_test("2W2");
+            //        company.print_test("YY2YY");
+            //        company.print_train("2W2");
+            //        CompanyInfo::MATable table(company);
+            //        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 20);
+            //        company.instant_trade("2020-01-02", "2021-06-30", 5, 20, 5, 60);
         if (setCompany != "all") {
             break;
         }
@@ -2072,3 +2062,38 @@ int main(int argc, const char *argv[]) {
  particle.RoR__ = (remain - TOTAL_CP_LV) / TOTAL_CP_LV * 100;
  }
  */
+
+    //void MA_GNQTS::print_all_particle() {
+    //    for (int i = 0; i < particles_.size(); i++) {
+    //        cout << "P:" << i << endl;
+    //        for_each(particles_[i].buy1_bi__.begin(), particles_[i].buy1_bi__.end(), [](auto i) { cout << i << ","; });
+    //        cout << "|";
+    //        for_each(particles_[i].buy2_bi__.begin(), particles_[i].buy2_bi__.end(), [](auto i) { cout << i << ","; });
+    //        cout << "|";
+    //        for_each(particles_[i].sell1_bi__.begin(), particles_[i].sell1_bi__.end(), [](auto i) { cout << i << ","; });
+    //        cout << "|";
+    //        for_each(particles_[i].sell2_bi__.begin(), particles_[i].sell2_bi__.end(), [](auto i) { cout << i << ","; });
+    //        cout << "|";
+    //        cout << particles_[i].RoR__ << "%" << endl;
+    //        cout << particles_[i].buy1_dec__ << "," << particles_[i].buy2_dec__ << "," << particles_[i].sell1_dec__ << "," << particles_[i].sell2_dec__ << endl;
+    //    }
+    //}
+
+    //void MA_GNQTS::print_betaMatrix() {
+    //    for (int i = 0; i < BUY1_BITS; i++) {
+    //        cout << betaMtrix_.buy1__[i] << ",";
+    //    }
+    //    cout << "|";
+    //    for (int i = 0; i < BUY2_BITS; i++) {
+    //        cout << betaMtrix_.buy2__[i] << ",";
+    //    }
+    //    cout << "|";
+    //    for (int i = 0; i < SELL1_BITS; i++) {
+    //        cout << betaMtrix_.sell1__[i] << ",";
+    //    }
+    //    cout << "|";
+    //    for (int i = 0; i < SELL2_BITS; i++) {
+    //        cout << betaMtrix_.sell2__[i] << ",";
+    //    }
+    //    cout << endl;
+    //}
