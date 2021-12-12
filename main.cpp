@@ -53,7 +53,7 @@ vector<vector<string>> read_data(path filePath) {
         cout << filePath.string() + " not found" << endl;
         exit(1);
     }
-    cout << "reading " + filePath.filename().string() << endl;
+//    cout << "reading " + filePath.filename().string() << endl;
     string row;
     string cell;
     vector<string> oneRow;
@@ -153,8 +153,10 @@ public:
     int longestTrainRow_{-1};
     int windowNumber_;
     vector<vector<double>> MAtable_;
-    string trainFilePath;
-    string testFilePath;
+    string trainFilePath_;
+    string testFilePath_;
+    string trainTraditionFilePath_;
+    string testTraditionFilePath_;
     
     void store_date_price(path priceFilePath);
     void create_folder();
@@ -214,8 +216,9 @@ public:
         void record_last_info();
         static bool check_buy_cross(int stockHold, double MAbuy1PreDay, double MAbuy2PreDay, double MAbuy1Today, double MAbuy2Today, int i, int endRow);
         static bool check_sell_cross(int stockHold, double MAsell1PreDay, double MAsell2PreDay, double MAsell1Today, double MAsell2Today, int i, int endRow);
-        void trade(int, int, CompanyInfo::MATable &, bool lastRecord = false);
+        void trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord = false);
         void print_trade_record(ofstream &out);
+        void print_train_data(CompanyInfo &company_, CompanyInfo::MATable &MAtable_,string trainPath, int actualStartRow_, int actualEndRow_);
         
         Particle(int buy1 = 0, int buy2 = 0, int sell1 = 0, int sell2 = 0, bool on = false);
     };
@@ -228,7 +231,7 @@ public:
     Particle best_;
     int actualStartRow_{-1};
     int actualEndRow_{-1};
-    CompanyInfo::MATable &MAtable_;
+    CompanyInfo::MATable &table_;
     CompanyInfo &company_;
     
     void update_global();
@@ -248,7 +251,6 @@ public:
     void store_exp_gen(int expCnt, int generation);
     void start_gen(bool debug, int expCnt, int generation, ofstream &out);
     void start_exp(bool debug, int expCnt, ofstream &out);
-    void print_train_data(CompanyInfo &company, CompanyInfo::MATable &table, string trainPath);
     
     MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record);
 };
@@ -261,10 +263,67 @@ public:
     
     CompanyInfo::TestWindow set_window(string &actualWindow, string &targetWindow, int &windowIndex);
     void check_exception(vector<path> &eachTrainFilePath, CompanyInfo::TestWindow &window);
-    void print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window);
+    void print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window, string testFileOutputPath);
+    void set_test_output_path(string &testFileOutputPath, string &trainFilePath, bool tradition);
     
-    CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow);
+    CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, bool tradition = false);
 };
+
+class Tradition {
+public:
+    vector<vector<int>> traditionStrategy{{5, 20, 5, 20}, {5, 60, 5, 60}};
+    CompanyInfo &company_;
+    vector<MA_GNQTS::Particle> p_;
+    vector<MA_GNQTS::Particle> eachBestP_;
+    
+    CompanyInfo::TrainWindow set_window(string &targetWindow, int &windowIndex);
+    void trainTradition(CompanyInfo::MATable &table, string targetWindow);
+    
+    Tradition(CompanyInfo &company, string targetWindow = "all");
+};
+
+CompanyInfo::TrainWindow Tradition::set_window(string &targetWindow, int &windowIndex) {
+    string actualWindow = _slidingWindows[windowIndex];
+    if (targetWindow != "all") {
+        actualWindow = targetWindow;
+        windowIndex = company_.windowNumber_;
+    }
+    CompanyInfo::TrainWindow window(actualWindow, company_);
+    cout << actualWindow << endl;
+    return window;
+}
+
+void Tradition::trainTradition(CompanyInfo::MATable &table, string targetWindow) {
+    cout << "train " + company_.companyName_ + " tradition" << endl;
+    int startRow = 0;
+    int endRow = 0;
+    string outputPath = "";
+    for (int windowIndex = 0; windowIndex < company_.windowNumber_; windowIndex++) {
+        CompanyInfo::TrainWindow window = set_window(targetWindow, windowIndex);
+        for (int intervalIndex = 0; intervalIndex < window.interval__.size(); intervalIndex += 2) {
+            startRow = window.interval__[intervalIndex];
+            endRow = window.interval__[intervalIndex + 1];
+            outputPath = company_.trainTraditionFilePath_ + window.windowName__;
+            for (int i = 0; i < p_.size(); i++) {
+                p_[i].initialize();
+                p_[i].buy1_dec__ = traditionStrategy[i][0];
+                p_[i].buy2_dec__ = traditionStrategy[i][1];
+                p_[i].sell1_dec__ = traditionStrategy[i][2];
+                p_[i].sell2_dec__ = traditionStrategy[i][3];
+                p_[i].trade(startRow, endRow, table);
+            }
+            stable_sort(p_.begin(), p_.end(), [](const MA_GNQTS::Particle &a, const MA_GNQTS::Particle &b) { return a.RoR__ > b.RoR__; });
+//                eachBestP_.push_back(p_[0]);
+            p_[0].print_train_data(company_, table, outputPath, startRow, endRow);
+        }
+    }
+}
+
+Tradition::Tradition(CompanyInfo &company, string targetWindow) : company_(company), p_(traditionStrategy.size()) {
+    CompanyInfo::MATable table(company_);
+    trainTradition(table, targetWindow);
+    CalculateTest runTest(company_, table, targetWindow, true);
+}
 
 CompanyInfo::TestWindow CalculateTest::set_window(string &actualWindow, string &targetWindow, int &windowIndex) {
     if (targetWindow != "all") {
@@ -272,6 +331,7 @@ CompanyInfo::TestWindow CalculateTest::set_window(string &actualWindow, string &
         windowIndex = company_.windowNumber_;
     }
     CompanyInfo::TestWindow window(actualWindow, company_);
+    cout << window.windowName__ << endl;
     return window;
 }
 
@@ -282,9 +342,10 @@ void CalculateTest::check_exception(vector<path> &eachTrainFilePath, CompanyInfo
     }
 }
 
-void CalculateTest::print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window) {
+void CalculateTest::print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window, string testFileOutputPath) {
     ofstream out;
-    out.open(company_.testFilePath + window.windowName__ + "/" + table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]] + ".csv");
+    string period = table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]];
+    out.open(testFileOutputPath + window.windowName__ + "/" + period + ".csv");
     out << "algo," + _algo[_algoUse] << endl;
     out << "delta," << _delta << endl;
     out << "exp," << _expNumber << endl;
@@ -310,13 +371,26 @@ void CalculateTest::print_test_data(int intervalIndex, MA_GNQTS::Particle &p, Co
     out.close();
 }
 
-CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow) : company_(company), table_(table) {
-    for (int windowIndex{0}; windowIndex < company_.windowNumber_; windowIndex++) {
+void CalculateTest::set_test_output_path(string &testFileOutputPath, string &trainFilePath, bool tradition) {
+    trainFilePath = company_.trainFilePath_;
+    testFileOutputPath = company_.testFilePath_;
+    if (tradition) {
+        trainFilePath = company_.trainTraditionFilePath_;
+        testFileOutputPath = company_.testTraditionFilePath_;
+    }
+    cout << "test " + company_.companyName_ << endl;
+}
+
+CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, bool tradition) : company_(company), table_(table) {
+    string trainFilePath;
+    string testFileOutputPath;
+    set_test_output_path(testFileOutputPath, trainFilePath, tradition);
+    for (int windowIndex = 0; windowIndex < company_.windowNumber_; windowIndex++) {
         string actualWindow = _slidingWindows[windowIndex];
         if (actualWindow != "A2A") {
             CompanyInfo::TestWindow window = set_window(actualWindow, targetWindow, windowIndex);
-            vector<path> eachTrainFilePath = get_path(company_.trainFilePath + window.windowName__);
-            for (int intervalIndex{0}, trainFileIndex{0}; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
+            vector<path> eachTrainFilePath = get_path(trainFilePath + window.windowName__);
+            for (int intervalIndex = 0, trainFileIndex = 0; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
                 check_exception(eachTrainFilePath, window);
                 vector<vector<string>> thisTrainFile = read_data(eachTrainFilePath[trainFileIndex]);
                 p_.initialize();
@@ -326,7 +400,7 @@ CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, 
                 p_.sell2_dec__ = stoi(thisTrainFile[13][1]);
                 p_.isRecordOn__ = true;
                 p_.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
-                print_test_data(intervalIndex, p_, window);
+                print_test_data(intervalIndex, p_, window, testFileOutputPath);
             }
         }
     }
@@ -349,6 +423,7 @@ void MA_GNQTS::Particle::initialize(double RoR) {
     gen__ = 0;
     exp__ = 0;
     bestCnt__ = 0;
+    isRecordOn__ = false;
 }
 
 void MA_GNQTS::Particle::measure(BetaMatrix &beta) {
@@ -754,14 +829,14 @@ void MA_GNQTS::BetaMatrix::print(ofstream &out, bool debug) {
 
 void MA_GNQTS::find_new_row(string startDate, string endDate) {
     if (startDate != "") {
-        for (int i = 0; i < MAtable_.days__; i++) {
-            if (startDate == MAtable_.date__[i]) {
+        for (int i = 0; i < table_.days__; i++) {
+            if (startDate == table_.date__[i]) {
                 actualStartRow_ = i;
                 break;
             }
         }
-        for (int i = actualStartRow_; i < MAtable_.days__; i++) {
-            if (endDate == MAtable_.date__[i]) {
+        for (int i = actualStartRow_; i < table_.days__; i++) {
+            if (endDate == table_.date__[i]) {
                 actualEndRow_ = i;
                 break;
             }
@@ -786,7 +861,7 @@ void MA_GNQTS::set_row_and_break_conditioin(string startDate, int &windowIndex, 
         actualStartRow_ = window.interval__[intervalIndex];
         actualEndRow_ = window.interval__[intervalIndex + 1];
     }
-    cout << MAtable_.date__[actualStartRow_] << "~" << MAtable_.date__[actualEndRow_] << endl;
+    cout << table_.date__[actualStartRow_] << "~" << table_.date__[actualEndRow_] << endl;
 }
 
 void MA_GNQTS::print_debug_beta(bool debug, ofstream &out) {
@@ -839,7 +914,7 @@ CompanyInfo::TrainWindow MA_GNQTS::set_wondow(string &startDate, string &targetW
     if (startDate == "") {  //如果沒有設定特定的日期，就印所有視窗日期
         window.print_train();
     }
-    if (company_.trainFilePath == "") {
+    if (company_.trainFilePath_ == "") {
         window.windowName__ = "";
     }
     return window;
@@ -850,7 +925,7 @@ ofstream MA_GNQTS::set_debug_file(bool debug) {
     if (debug) {
         string delta = to_string(_delta);
         delta.erase(delta.find_last_not_of('0') + 1, std::string::npos);
-        out.open("debug_" + company_.companyName_ + "_" + company_.MAType_ + "_" + _algo[_algoUse] + "_" + delta + "_" + MAtable_.date__[actualStartRow_] + "_" + MAtable_.date__[actualEndRow_] + ".csv");
+        out.open("debug_" + company_.companyName_ + "_" + company_.MAType_ + "_" + _algo[_algoUse] + "_" + delta + "_" + table_.date__[actualStartRow_] + "_" + table_.date__[actualEndRow_] + ".csv");
     }
     return out;
 }
@@ -888,7 +963,7 @@ void MA_GNQTS::start_gen(bool debug, int expCnt, int generation, ofstream &out) 
         particles_[i].initialize();
         particles_[i].measure(betaMtrix_);
         particles_[i].convert_bi_dec();
-        particles_[i].trade(actualStartRow_, actualEndRow_, MAtable_);
+        particles_[i].trade(actualStartRow_, actualEndRow_, table_);
         print_debug_particle(debug, i, out);
     }
     store_exp_gen(expCnt, generation);
@@ -906,17 +981,17 @@ void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
     update_best();
 }
 
-void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table, string trainPath) {
+void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table,string trainPath, int actualStartRow, int actualEndRow) {
     if (trainPath != "") {
         trainPath += "/";
     }
     else {
         string delta = to_string(_delta);
         delta.erase(delta.find_last_not_of('0') + 1, std::string::npos);
-        trainPath = company_.MAType_ + "_" + company_.companyName_ + "_" + _algo[_algoUse] + "_" + delta + "_";
+        trainPath = company.MAType_ + "_" + company.companyName_ + "_" + _algo[_algoUse] + "_" + delta + "_";
     }
     ofstream trainedData;
-    trainedData.open(trainPath + table.date__[actualStartRow_] + "_" + table.date__[actualEndRow_] + ".csv");
+    trainedData.open(trainPath + table.date__[actualStartRow] + "_" + table.date__[actualEndRow] + ".csv");
     trainedData << "algo," + _algo[_algoUse] << endl;
     trainedData << "delta," << _delta << endl;
     trainedData << "exp," << _expNumber << endl;
@@ -924,29 +999,28 @@ void MA_GNQTS::print_train_data(CompanyInfo &company, CompanyInfo::MATable &tabl
     trainedData << "p amount," << PARTICAL_AMOUNT << endl;
     trainedData << endl;
     trainedData << "initial capital," << TOTAL_CP_LV << endl;
-    trainedData << "final capital," << best_.remain__ << endl;
-    trainedData << "final return," << best_.remain__ - TOTAL_CP_LV << endl;
+    trainedData << "final capital," << remain__ << endl;
+    trainedData << "final return," << remain__ - TOTAL_CP_LV << endl;
     trainedData << endl;
-    trainedData << "buy1," << best_.buy1_dec__ << endl;
-    trainedData << "buy2," << best_.buy2_dec__ << endl;
-    trainedData << "sell1," << best_.sell1_dec__ << endl;
-    trainedData << "sell2," << best_.sell2_dec__ << endl;
-    trainedData << "trade," << best_.sellNum__ << endl;
-    trainedData << "return rate," << best_.RoR__ << "%" << endl;
+    trainedData << "buy1," << buy1_dec__ << endl;
+    trainedData << "buy2," << buy2_dec__ << endl;
+    trainedData << "sell1," << sell1_dec__ << endl;
+    trainedData << "sell2," << sell2_dec__ << endl;
+    trainedData << "trade," << sellNum__ << endl;
+    trainedData << "return rate," << RoR__ << "%" << endl;
     trainedData << endl;
-    trainedData << "best exp," << best_.exp__ << endl;
-    trainedData << "best gen," << best_.gen__ << endl;
-    trainedData << "best cnt," << best_.bestCnt__ << endl;
+    trainedData << "best exp," << exp__ << endl;
+    trainedData << "best gen," << gen__ << endl;
+    trainedData << "best cnt," << bestCnt__ << endl;
     trainedData << endl;
-    best_.isRecordOn__ = true;
-    best_.remain__ = TOTAL_CP_LV;
-    best_.trade(actualStartRow_, actualEndRow_, table);
-    best_.print_trade_record(trainedData);
+    isRecordOn__ = true;
+    remain__ = TOTAL_CP_LV;
+    trade(actualStartRow, actualEndRow, table);
+    print_trade_record(trainedData);
     trainedData.close();
-    cout << best_.RoR__ << "%" << endl;
 }
 
-MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record) : particles_(PARTICAL_AMOUNT), MAtable_(table), company_(company) {
+MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record) : particles_(PARTICAL_AMOUNT), table_(table), company_(company) {
     find_new_row(startDate, endDate);  //如果有設定特定的日期，這邊要重新找row
     is_record_on(record);
     for (int windowIndex{0}; windowIndex < company.windowNumber_; windowIndex++) {
@@ -960,7 +1034,9 @@ MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string tar
                 start_exp(debug, expCnt, out);
             }
             out.close();
-            print_train_data(company, table, company_.trainFilePath + window.windowName__);
+//            print_train_data(company_.trainFilePath_ + window.windowName__);
+            best_.print_train_data(company_, table_, company_.trainFilePath_ + window.windowName__, actualStartRow_, actualEndRow_);
+            cout << best_.RoR__ << "%" << endl;
         }
         cout << "==========" << endl;
     }
@@ -1240,7 +1316,7 @@ void CompanyInfo::TrainWindow::check_startRowSize_endRowSize(int startRowSize, i
 }
 
 void CompanyInfo::TrainWindow::print_train() {
-    cout << windowName__ + "=" + windowNameEx__ << endl;
+    cout << "train " + windowName__ + "=" + windowNameEx__ << endl;
     for (auto it = interval__.begin(); it != interval__.end(); it++) {
         cout << company__.date_[*it + company__.longestTrainRow_] + "~" + company__.date_[*(++it) + company__.longestTrainRow_] << endl;
     }
@@ -1374,8 +1450,10 @@ CompanyInfo::TestWindow::TestWindow(string window, CompanyInfo &company) : windo
 void CompanyInfo::create_folder() {
     create_directories(MAType_ + "/" + companyName_);
     for_each_n(_slidingWindows.begin(), _slidingWindows.size(), [&](auto i) {
-        create_directories(trainFilePath + i);
-        create_directories(testFilePath + i);
+        create_directories(trainFilePath_ + i);
+        create_directories(testFilePath_ + i);
+        create_directories(trainTraditionFilePath_ + i);
+        create_directories(testTraditionFilePath_ + i);
     });
 }
 
@@ -1497,7 +1575,7 @@ void CompanyInfo::train(string targetWindow, string startDate, string endDate, b
             targetWindow = startDate;
             startDate = "";
         }
-        trainFilePath = "";
+        trainFilePath_ = "";
     }
     else if (targetWindow.length() == 10 && startDate.length() == 10) {
         if (endDate == "record") {
@@ -1506,7 +1584,7 @@ void CompanyInfo::train(string targetWindow, string startDate, string endDate, b
         endDate = startDate;
         startDate = targetWindow;
         targetWindow = "A2A";
-        trainFilePath = "";
+        trainFilePath_ = "";
     }
     else if (targetWindow == "record") {
         record = true;
@@ -1650,7 +1728,7 @@ void CompanyInfo::instant_trade(string startDate, string endDate, int buy1, int 
     out.close();
 }
 
-CompanyInfo::CompanyInfo(path filePath, string MAUse) : companyName_(filePath.stem().string()), MAType_(MAUse), MAOutputPath_(MAType_ + "/" + companyName_), trainFilePath(_outputPath + "/" + companyName_ + "/train/"), testFilePath(_outputPath + "/" + companyName_ + "/test/"), windowNumber_(int(_slidingWindows.size())) {
+CompanyInfo::CompanyInfo(path filePath, string MAUse) : companyName_(filePath.stem().string()), MAType_(MAUse), MAOutputPath_(MAType_ + "/" + companyName_), trainFilePath_(_outputPath + "/" + companyName_ + "/train/"), testFilePath_(_outputPath + "/" + companyName_ + "/test/"), windowNumber_(int(_slidingWindows.size())), trainTraditionFilePath_(_outputPath + "/" + companyName_ + "/trainTradition/"), testTraditionFilePath_(_outputPath + "/" + companyName_ + "/testTradition/") {
     if (_outputDecimal2 == 1) {
         MAOutputPath_ = MAType_ + ".2/" + companyName_;
     }
@@ -1684,16 +1762,18 @@ int main(int argc, const char *argv[]) {
         }
         CompanyInfo company(targetPath, setMA);
         cout << company.companyName_ << endl;
+        time_point begin = steady_clock::now();
         switch (setMode) {
             case 0 : {
-                time_point begin = steady_clock::now();
                 company.train(setWindow);
-                time_point end = steady_clock::now();
-                cout << "time: " << duration_cast<seconds>(end - begin).count() << " s" << endl;
                 break;
             }
             case 1 : {
                 company.test(setWindow);
+                break;
+            }
+            case 2 : {
+                Tradition tradition(company, setWindow);
                 break;
             }
             case 10 : {
@@ -1704,6 +1784,8 @@ int main(int argc, const char *argv[]) {
                 break;
             }
         }
+        time_point end = steady_clock::now();
+        cout << "time: " << duration_cast<seconds>(end - begin).count() << " s" << endl;
     }
     return 0;
 }
