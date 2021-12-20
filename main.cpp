@@ -20,7 +20,7 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 3;
+int _mode = -1;
 string _setCompany = "AAPL";
 string _setWindow = "all";
 int _MAUse = 0;
@@ -1816,7 +1816,7 @@ public:
     vector<Rank> companyWindowRank_;
     string outputPath_;
     
-    void compute_record_window_RoR(vector<path> &strategies, __wrap_iter<path *> &strategyPath, ofstream &RoROut, double *totalRate, int i);
+    void compute_record_window_RoR(vector<path> &strategies, vector<path>::iterator &strategyPath, ofstream &RoROut, double *totalRate, int i);
     void record_window_IRR(string &companyName, ofstream &testRoROut, ofstream &traditionRoROut, int windowIndex, vector<IRRout::WindowIRR> &windowRankList);
     void record_BH_IRR(int companyIndex, string &setMA, vector<IRRout::WindowIRR> &windowRankList);
     void sort_by_tradition_IRR(vector<IRRout::WindowIRR> &windowRankList);
@@ -1831,8 +1831,8 @@ public:
     IRRout(double testLength ,vector<path> companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath);
 };
 
-void IRRout::compute_record_window_RoR(vector<path> &strategies, __wrap_iter<path *> &strategyPath, ofstream &RoROut, double *totalRate, int i) {
-    string strategyName = strategyPath->stem();
+void IRRout::compute_record_window_RoR(vector<path> &strategies, vector<path>::iterator &strategyPath, ofstream &RoROut, double *totalRate, int i) {
+    string strategyName = strategyPath->stem().string();
     vector<vector<string> > testFile = read_data(*strategyPath);
     double RoR = stod(testFile[15][1]);
     RoROut << strategyName + "," + testFile[10][1] + "," + testFile[11][1] + "," + testFile[12][1] + "," + testFile[13][1] + "," + testFile[15][1] << endl;
