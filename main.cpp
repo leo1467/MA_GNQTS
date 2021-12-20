@@ -20,7 +20,7 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = -1;
+int _mode = 3;
 string _setCompany = "AAPL";
 string _setWindow = "all";
 int _MAUse = 0;
@@ -1827,7 +1827,7 @@ public:
     vector<string> removeA2ASort();
     void output_window_rank();
     
-    IRRout(double testLength ,vector<path> companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath);
+    IRRout(double testLength ,vector<path> &companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath);
 };
 
 void IRRout::compute_record_window_RoR(vector<path> &strategies, vector<path>::iterator &strategyPath, ofstream &RoROut, double *totalRate, int i) {
@@ -1985,7 +1985,7 @@ void IRRout::output_window_rank() {
     rankOut.close();
 }
 
-IRRout::IRRout(double testLength ,vector<path> companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath) : testLength_(testLength) ,companyPricePath_(companyPricePath), slidingWindows_(slidingWindows), totalCPLV_(totalCPLV), outputPath_(outputPath) {
+IRRout::IRRout(double testLength ,vector<path> &companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath) : testLength_(testLength) ,companyPricePath_(companyPricePath), slidingWindows_(slidingWindows), totalCPLV_(totalCPLV), outputPath_(outputPath) {
     ofstream IRROut;
     IRROut.open("test_IRR.csv");
     for (int companyIndex = 0; companyIndex < companyPricePath_.size(); companyIndex++) {
@@ -1993,6 +1993,7 @@ IRRout::IRRout(double testLength ,vector<path> companyPricePath, vector<string> 
     }
     output_window_rank();
     IRROut.close();
+    companyPricePath.clear();
 }
 
 
@@ -2013,7 +2014,7 @@ int main(int argc, const char *argv[]) {
                     break;
                 }
             }
-            companyPricePath.erase(companyPricePath.begin(), companyPricePath.end());
+            companyPricePath.clear();
             companyPricePath.push_back(targetPath);
         }
         CompanyInfo company(targetPath, setMA);
