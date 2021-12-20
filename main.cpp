@@ -20,9 +20,9 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 10;
-string _setCompany = "2603.TW";
-string _setWindow = "M2M";
+int _mode = 3;
+string _setCompany = "AAPL";
+string _setWindow = "all";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
 int _algoUse = 2;
@@ -30,7 +30,7 @@ string _algo[] = {"QTS", "GQTS", "GNQTS"};
 
 int _techIndex = 0;
 
-path _pricePath = "price.2"; //若要讀取到小數2位的用price.2，沒有的話用price
+path _pricePath = "price"; //若要讀取到小數2位的用price.2，沒有的話用price
 int _closeCol = 4;
 string _testStartYear = "2012";
 string _testEndYear = "2021";
@@ -38,7 +38,7 @@ double _testYearLength = stod(_testEndYear) - stod(_testStartYear);
 vector<string> _slidingWindows{"A2A", "YYY2YYY", "YYY2YY", "YYY2YH", "YYY2Y", "YYY2H", "YYY2Q", "YYY2M", "YY2YY", "YY2YH", "YY2Y", "YY2H", "YY2Q", "YY2M", "YH2YH", "YH2Y", "YH2H", "YH2Q", "YH2M", "Y2Y", "Y2H", "Y2Q", "Y2M", "H2H", "H2Q", "H2M", "Q2Q", "Q2M", "M2M", "H#", "Q#", "M#", "20D20", "20D15", "20D10", "20D5", "15D15", "15D10", "15D5", "10D10", "10D5", "5D5", "5D4", "5D3", "5D2", "4D3", "4D2", "3D2", "2D2", "4W4", "4W3", "4W2", "4W1", "3W3", "3W2", "3W1", "2W2", "2W1", "1W1"};
 vector<string> _slidingWindowsEX{"A2A", "36M36", "36M24", "36M18", "36M12", "36M6", "36M3", "36M1", "24M24", "24M18", "24M12", "24M6", "24M3", "24M1", "18M18", "18M12", "18M6", "18M3", "18M1", "12M12", "12M6", "12M3", "12M1", "6M6", "6M3", "6M1", "3M3", "3M1", "1M1", "6M", "3M", "1M", "20D20", "20D15", "20D10", "20D5", "15D15", "15D10", "15D5", "10D10", "10D5", "5D5", "5D4", "5D3", "5D2", "4D3", "4D2", "3D2", "2D2", "4W4", "4W3", "4W2", "4W1", "3W3", "3W2", "3W1", "2W2", "2W1", "1W1"};
 
-double _delta = 0.0003;
+double _delta = 0.00012;
 int _expNumber = 50;
 int _generationNumber = 10000;
 
@@ -77,6 +77,11 @@ vector<path> get_path(path targetPath) {
     vector<path> filePath;
     copy(directory_iterator(targetPath), directory_iterator(), back_inserter(filePath));
     sort(filePath.begin(), filePath.end());
+    for (auto i = filePath.begin(); i != filePath.end(); i++) {
+        if (i->filename() == ".DS_Store") {
+            filePath.erase(i);
+        }
+    }
     return filePath;
 }
 
@@ -87,6 +92,21 @@ double round(double input, int point) {
         exit(1);
     }
     return output;
+}
+
+bool is_double(const string &s) {
+    string::const_iterator it = s.begin();
+    int dotsCnt = 0;
+    while (it != s.end() && (isdigit(*it) || *it == '.')) {
+        if (*it == '.') {
+            ++dotsCnt;
+            if (dotsCnt > 1 || dotsCnt == s.size()) {
+                break;
+            }
+        }
+        ++it;
+    }
+    return !s.empty() && it == s.end();
 }
 
 class CompanyInfo {
@@ -267,6 +287,35 @@ public:
     void set_test_output_path(string &testFileOutputPath, string &trainFilePath, bool tradition);
     
     CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, bool tradition = false);
+};
+
+class BH {
+public:
+    double BHRoR;
+    BH(string startDate, string endDate, CompanyInfo &company, double totalCPLv) {
+        int startRow = -1;
+        int endRow = -1;
+        for (int i = 0; i < company.totalDays_; i++) {
+            if (startDate == company.date_[i]) {
+                startRow = i;
+                break;
+            }
+        }
+        for (int i = startRow; i < company.totalDays_; i++) {
+            if (endDate == company.date_[i]) {
+                endRow = i;
+                break;
+            }
+        }
+        if (startRow == -1 || endRow == -1) {
+            cout << "cant find B&H startRow or endRow" << endl;
+            exit(1);
+        }
+        int stockHold = totalCPLv / company.price_[startRow];
+        double remain = totalCPLv - stockHold * company.price_[startRow];
+        remain += stockHold * company.price_[endRow];
+        BHRoR = ((remain - totalCPLv) / totalCPLv);
+    }
 };
 
 class Tradition {
@@ -1464,7 +1513,8 @@ void CompanyInfo::store_date_price(path priceFilePath) {
     price_ = new double[totalDays_];
     for (int i = 1, j = 0; i <= totalDays_; i++) {
         date_[i - 1] = priceFile[i][0];
-        if (priceFile[i][_closeCol] == "null") {
+//        if (priceFile[i][_closeCol] == "null") {
+        if (!is_double(priceFile[i][_closeCol])) {
             price_[i - 1] = price_[i - 2];
         }
         else {
@@ -1743,50 +1793,266 @@ CompanyInfo::~CompanyInfo() {
     delete[] price_;
 }
 
+class IRRout {
+public:
+    class WindowIRR {  //裝滑動視窗跟報酬率
+    public:
+        string window_;
+        double GNQTSIRR_;
+        double traditionIRR_;
+        int rank_;
+    };
+    class Rank {
+    public:
+        string companyName_;
+        vector<int> GNQTSWindowRank_;
+        vector<int> traditionWindowRank_;
+    };
+    double totalCPLV_;
+    double testLength_;
+    vector<path> companyPricePath_;
+    vector<string> slidingWindows_;
+    WindowIRR tmp_;
+    vector<Rank> companyWindowRank_;
+    string outputPath_;
+    
+    void compute_record_window_RoR(vector<path> &strategies, __wrap_iter<path *> &strategyPath, ofstream &RoROut, double *totalRate, int i);
+    void record_window_IRR(string &companyName, ofstream &testRoROut, ofstream &traditionRoROut, int windowIndex, vector<IRRout::WindowIRR> &windowRankList);
+    void record_BH_IRR(int companyIndex, string &setMA, vector<IRRout::WindowIRR> &windowRankList);
+    void sort_by_tradition_IRR(vector<IRRout::WindowIRR> &windowRankList);
+    void sort_by_window_Name(vector<IRRout::WindowIRR> &windowRankList);
+    void sort_by_GNQTS_IRR(vector<IRRout::WindowIRR> &windowRankList);
+    void rank_window(vector<IRRout::WindowIRR> &windowRankList);
+    void rank_tradition_GNQTS_window(string &companyName, vector<IRRout::WindowIRR> &windowRankList);
+    void record_company_window_IRR(ofstream &IRROut, int companyIndex, string &setMA);
+    vector<string> removeA2ASort();
+    void output_window_rank();
+    
+    IRRout(double testLength ,vector<path> companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath);
+};
+
+void IRRout::compute_record_window_RoR(vector<path> &strategies, __wrap_iter<path *> &strategyPath, ofstream &RoROut, double *totalRate, int i) {
+    string strategyName = strategyPath->stem();
+    vector<vector<string> > testFile = read_data(*strategyPath);
+    double RoR = stod(testFile[15][1]);
+    RoROut << strategyName + "," + testFile[10][1] + "," + testFile[11][1] + "," + testFile[12][1] + "," + testFile[13][1] + "," + testFile[15][1] << endl;
+    if (strategyPath == strategies.begin()) {
+        totalRate[i] = RoR / 100.0 + 1.0;
+    }
+    else {
+        totalRate[i] = totalRate[i] * (RoR / 100.0 + 1.0);
+    }
+}
+
+void IRRout::record_window_IRR(string &companyName, ofstream &testRoROut, ofstream &traditionRoROut, int windowIndex, vector<IRRout::WindowIRR> &windowRankList) {
+    string windowName = slidingWindows_[windowIndex];
+    if (windowName != "A2A") {
+        cout << windowName << endl;
+        testRoROut << ",================" + windowName + "================" << endl;
+        traditionRoROut << ",================" + windowName + "================" << endl;
+        double totalRate[] = {0, 0};
+        vector<path> GNQTSstrategies = get_path(outputPath_ + "/" + companyName + "/test/" + windowName);
+        for (auto strategyPath = GNQTSstrategies.begin(); strategyPath != GNQTSstrategies.end(); strategyPath++) {
+            compute_record_window_RoR(GNQTSstrategies, strategyPath, testRoROut, totalRate, 0);
+        }
+        vector<path> traditionStrategies = get_path(outputPath_ + "/" + companyName + "/testTradition/" + windowName);
+        for (auto strategyPath = traditionStrategies.begin(); strategyPath != traditionStrategies.end(); strategyPath++) {
+            compute_record_window_RoR(traditionStrategies, strategyPath, traditionRoROut, totalRate, 1);
+        }
+        if (GNQTSstrategies.size() != traditionStrategies.size()) {
+            cout << "GNQTSstrategies.size() != traditionStrategies.size()" << endl;
+            exit(1);
+        }
+        tmp_.window_ = windowName;
+        tmp_.GNQTSIRR_ = pow(totalRate[0], 1.0 / testLength_) - 1.0;  //計算年化報酬;
+        tmp_.traditionIRR_ = pow(totalRate[1], 1.0 / testLength_) - 1.0;
+        totalRate[0]--;
+        totalRate[1]--;
+        windowRankList.push_back(tmp_);
+        testRoROut << ",,,,,," + windowName + "," << totalRate[0] << "," << tmp_.GNQTSIRR_ << endl;
+        traditionRoROut << ",,,,,," + windowName + "," << totalRate[1] << "," << tmp_.traditionIRR_ << endl;
+    }
+}
+
+
+void IRRout::record_BH_IRR(int companyIndex, string &setMA, vector<IRRout::WindowIRR> &windowRankList) {
+    tmp_.window_ = "B&H";
+    CompanyInfo company(companyPricePath_[companyIndex], setMA);
+    BH bh(company.date_[company.testStartRow_], company.date_[company.testEndRow_], company, totalCPLV_);
+    tmp_.GNQTSIRR_ = pow(bh.BHRoR + 1, 1.0 / testLength_) - 1;
+    tmp_.traditionIRR_ = tmp_.GNQTSIRR_;
+    windowRankList.push_back(tmp_);
+}
+
+
+void IRRout::sort_by_tradition_IRR(vector<IRRout::WindowIRR> &windowRankList) {
+    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR& a, const WindowIRR& b) {
+        return a.traditionIRR_ > b.traditionIRR_;
+    });
+}
+
+void IRRout::sort_by_window_Name(vector<IRRout::WindowIRR> &windowRankList) {
+    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR& a, const WindowIRR& b) {
+        return a.window_ < b.window_;
+    });
+}
+
+void IRRout::sort_by_GNQTS_IRR(vector<IRRout::WindowIRR> &windowRankList) {
+    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR& a, const WindowIRR& b) {
+        return a.GNQTSIRR_ > b.GNQTSIRR_;
+    });
+}
+
+
+void IRRout::rank_window(vector<IRRout::WindowIRR> &windowRankList) {
+    for (int i = 0; i < windowRankList.size(); i++) {
+        windowRankList[i].rank_ = i + 1;
+    }
+}
+
+void IRRout::rank_tradition_GNQTS_window(string &companyName, vector<IRRout::WindowIRR> &windowRankList) {
+    Rank tmpRank;
+    tmpRank.companyName_ = companyName;
+    sort_by_tradition_IRR(windowRankList);
+    rank_window(windowRankList);
+    sort_by_window_Name(windowRankList);
+    for (int i = 0; i < windowRankList.size(); i++) {
+        tmpRank.traditionWindowRank_.push_back(windowRankList[i].rank_);
+    }
+    sort_by_GNQTS_IRR(windowRankList);
+    rank_window(windowRankList);
+    sort_by_window_Name(windowRankList);
+    for (int i = 0; i < windowRankList.size(); i++) {
+        tmpRank.GNQTSWindowRank_.push_back(windowRankList[i].rank_);
+    }
+    companyWindowRank_.push_back(tmpRank);
+    sort_by_GNQTS_IRR(windowRankList);
+}
+
+void IRRout::record_company_window_IRR(ofstream &IRROut, int companyIndex, string &setMA) {
+    vector<WindowIRR> windowRankList;
+    string companyName = companyPricePath_[companyIndex].stem().string();
+    cout << "=====" + companyName + "=====" << endl;
+    IRROut << "=====" + companyName + "=====,GNQTS,Tradition" << endl;
+    ofstream GNQTSRoROut, traditionRoROut;
+    GNQTSRoROut.open(outputPath_ + "/" + companyName + "/" + companyName + "_testRoR.csv");  //輸出一間公司所有視窗的每個區間的策略及報酬率
+    traditionRoROut.open(outputPath_ + "/" + companyName + "/" + companyName + "_traditionTestRoR.csv");
+    for (int windowIndex = 0; windowIndex < slidingWindows_.size(); windowIndex++) {
+        record_window_IRR(companyName, GNQTSRoROut, traditionRoROut, windowIndex, windowRankList);
+    }
+    GNQTSRoROut.close();
+    traditionRoROut.close();
+    record_BH_IRR(companyIndex, setMA, windowRankList);
+    rank_tradition_GNQTS_window(companyName, windowRankList);
+    for (int i = 0; i < windowRankList.size(); i++) {
+        IRROut << windowRankList[i].window_ + "," << windowRankList[i].GNQTSIRR_ * 100.0 << "," << windowRankList[i].traditionIRR_ * 100.0 << endl;
+    }
+}
+
+vector<string> IRRout::removeA2ASort() {
+    vector<string> windowSort(slidingWindows_.begin(), slidingWindows_.end());
+    auto A2AIter = find(windowSort.begin(), windowSort.end(), "A2A");
+    windowSort.erase(A2AIter);
+    windowSort.push_back("B&H");
+    sort(windowSort.begin(), windowSort.end());
+    return windowSort;
+}
+
+void IRRout::output_window_rank() {
+    vector<string> windowSort = removeA2ASort();
+    ofstream rankOut;
+    rankOut.open("windowRank.csv");
+    rankOut << "GNQTS window rank" << endl;
+    rankOut << ",";
+    for (auto &windowName : windowSort) {
+        rankOut << windowName + ",";
+    }
+    rankOut << endl;
+    for (auto &i : companyWindowRank_) {
+        rankOut << i.companyName_ + ",";
+        for (auto &j : i.GNQTSWindowRank_) {
+            rankOut << j << ",";
+        }
+        rankOut << endl;
+    }
+    rankOut << "tradition window rank" << endl;
+    for (auto &i : companyWindowRank_) {
+        rankOut << i.companyName_ + ",";
+        for (auto &j : i.traditionWindowRank_) {
+            rankOut << j << ",";
+        }
+        rankOut << endl;
+    }
+    rankOut.close();
+}
+
+IRRout::IRRout(double testLength ,vector<path> companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath) : testLength_(testLength) ,companyPricePath_(companyPricePath), slidingWindows_(slidingWindows), totalCPLV_(totalCPLV), outputPath_(outputPath) {
+    ofstream IRROut;
+    IRROut.open("test_IRR.csv");
+    for (int companyIndex = 0; companyIndex < companyPricePath_.size(); companyIndex++) {
+        record_company_window_IRR(IRROut, companyIndex, setMA);
+    }
+    output_window_rank();
+    IRROut.close();
+}
+
+
+
 int main(int argc, const char *argv[]) {
+    time_point begin = steady_clock::now();
     vector<path> companyPricePath = get_path(_pricePath);
     string setCompany = _setCompany;
     string setWindow = _setWindow;
     int setMode = _mode;
     string setMA = _MA[_MAUse];
-    for (int companyIndex = 0; companyIndex < companyPricePath.size(); companyIndex++) {
-        path targetPath = companyPricePath[companyIndex];
-        if (setCompany != "all") {
-            for (auto i : companyPricePath) {
-                if (i.stem() == setCompany) {
-                    targetPath = i;
-                    break;
+    switch (setMode) {
+        case 0 :
+        case 1:
+        case 2:
+        case 10:
+            for (int companyIndex = 0; companyIndex < companyPricePath.size(); companyIndex++) {
+                path targetPath = companyPricePath[companyIndex];
+                if (setCompany != "all") {
+                    for (auto i : companyPricePath) {
+                        if (i.stem() == setCompany) {
+                            targetPath = i;
+                            break;
+                        }
+                    }
+                    companyIndex = (int)companyPricePath.size();
+                }
+                CompanyInfo company(targetPath, setMA);
+                cout << company.companyName_ << endl;
+                switch (setMode) {
+                    case 0 : {
+                        company.train(setWindow);
+                        break;
+                    }
+                    case 1 : {
+                        company.test(setWindow);
+                        break;
+                    }
+                    case 2 : {
+                        Tradition tradition(company, setWindow);
+                        break;
+                    }
+                    case 10 : {
+                            //company.output_MA();
+                            //company.train("debug", "2020-01-02", "2021-06-30");
+                        //company.train("2020-01-02", "2021-06-30");
+                            //company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
+                        break;
+                    }
                 }
             }
-            companyIndex = (int)companyPricePath.size();
+            break;
+        case 3 : {
+            IRRout outputIRR(_testYearLength, companyPricePath, _slidingWindows, setMA, TOTAL_CP_LV, _outputPath);
+            break;
         }
-        CompanyInfo company(targetPath, setMA);
-        cout << company.companyName_ << endl;
-        time_point begin = steady_clock::now();
-        switch (setMode) {
-            case 0 : {
-                company.train(setWindow);
-                break;
-            }
-            case 1 : {
-                company.test(setWindow);
-                break;
-            }
-            case 2 : {
-                Tradition tradition(company, setWindow);
-                break;
-            }
-            case 10 : {
-                //company.output_MA();
-                //company.train("debug", "2020-01-02", "2021-06-30");
-                company.train("2020-01-02", "2021-06-30");
-                //company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
-                break;
-            }
-        }
-        time_point end = steady_clock::now();
-        cout << "time: " << duration_cast<seconds>(end - begin).count() << " s" << endl;
     }
+    time_point end = steady_clock::now();
+    cout << "time: " << duration_cast<seconds>(end - begin).count() << " s" << endl;
     return 0;
 }
 
