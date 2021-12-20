@@ -320,7 +320,7 @@ public:
 
 class Tradition {
 public:
-    vector<vector<int>> traditionStrategy{{5, 20, 5, 20}, {5, 60, 5, 60}};
+    vector<vector<int>> traditionStrategy{{5, 10, 5, 10}, {5, 20, 5, 20}, {5, 60, 5, 60}, {10, 20, 10, 20}, {10, 60, 10, 60}, {20, 60, 20, 60}, {120, 240, 120, 240}};
     CompanyInfo &company_;
     vector<MA_GNQTS::Particle> p_;
     vector<MA_GNQTS::Particle> eachBestP_;
@@ -1083,7 +1083,6 @@ MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string tar
                 start_exp(debug, expCnt, out);
             }
             out.close();
-//            print_train_data(company_.trainFilePath_ + window.windowName__);
             best_.print_train_data(company_, table_, company_.trainFilePath_ + window.windowName__, actualStartRow_, actualEndRow_);
             cout << best_.RoR__ << "%" << endl;
         }
@@ -2005,50 +2004,44 @@ int main(int argc, const char *argv[]) {
     string setWindow = _setWindow;
     int setMode = _mode;
     string setMA = _MA[_MAUse];
-    switch (setMode) {
-        case 0 :
-        case 1:
-        case 2:
-        case 10:
-            for (int companyIndex = 0; companyIndex < companyPricePath.size(); companyIndex++) {
-                path targetPath = companyPricePath[companyIndex];
-                if (setCompany != "all") {
-                    for (auto i : companyPricePath) {
-                        if (i.stem() == setCompany) {
-                            targetPath = i;
-                            break;
-                        }
-                    }
-                    companyIndex = (int)companyPricePath.size();
-                }
-                CompanyInfo company(targetPath, setMA);
-                cout << company.companyName_ << endl;
-                switch (setMode) {
-                    case 0 : {
-                        company.train(setWindow);
-                        break;
-                    }
-                    case 1 : {
-                        company.test(setWindow);
-                        break;
-                    }
-                    case 2 : {
-                        Tradition tradition(company, setWindow);
-                        break;
-                    }
-                    case 10 : {
-                            //company.output_MA();
-                            //company.train("debug", "2020-01-02", "2021-06-30");
-                        //company.train("2020-01-02", "2021-06-30");
-                            //company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
-                        break;
-                    }
+    for (int companyIndex = 0; companyIndex < companyPricePath.size(); companyIndex++) {
+        path targetPath = companyPricePath[companyIndex];
+        if (setCompany != "all") {
+            for (auto i : companyPricePath) {
+                if (i.stem() == setCompany) {
+                    targetPath = i;
+                    break;
                 }
             }
-            break;
-        case 3 : {
-            IRRout outputIRR(_testYearLength, companyPricePath, _slidingWindows, setMA, TOTAL_CP_LV, _outputPath);
-            break;
+            companyPricePath.erase(companyPricePath.begin(), companyPricePath.end());
+            companyPricePath.push_back(targetPath);
+        }
+        CompanyInfo company(targetPath, setMA);
+        cout << company.companyName_ << endl;
+        switch (setMode) {
+            case 0 : {
+                company.train(setWindow);
+                break;
+            }
+            case 1 : {
+                company.test(setWindow);
+                break;
+            }
+            case 2 : {
+                Tradition tradition(company, setWindow);
+                break;
+            }
+            case 3 : {
+                IRRout outputIRR(_testYearLength, companyPricePath, _slidingWindows, setMA, TOTAL_CP_LV, _outputPath);
+                break;
+            }
+            case 10 : {
+                    //company.output_MA();
+                    //company.train("debug", "2020-01-02", "2021-06-30");
+                    //company.train("2020-01-02", "2021-06-30");
+                    //company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
+                break;
+            }
         }
     }
     time_point end = steady_clock::now();
