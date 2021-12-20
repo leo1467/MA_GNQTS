@@ -85,15 +85,6 @@ vector<path> get_path(path targetPath) {
     return filePath;
 }
 
-double round(double input, int point) {
-    double output = (double)roundf(input * pow(10.0, point)) / pow(10.0, point);
-    if (input == 78.115 && output != 78.12) {
-        cout << "round fault" << endl;
-        exit(1);
-    }
-    return output;
-}
-
 bool is_double(const string &s) {
     string::const_iterator it = s.begin();
     int dotsCnt = 0;
@@ -117,10 +108,8 @@ public:
         string *date__;
         double *price__;
         double **MAtable__;
-        CompanyInfo &company__;
         
-        void create_MAtable();
-        void round_MATable_obj();
+        void create_MAtable(CompanyInfo &company);
         MATable(CompanyInfo &company);
         ~MATable();
     };
@@ -1090,13 +1079,13 @@ MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string tar
     }
 }
 
-void CompanyInfo::MATable::create_MAtable() {
-    days__ = company__.totalDays_ - company__.longestTrainRow_;
+void CompanyInfo::MATable::create_MAtable(CompanyInfo &company) {
+    days__ = company.totalDays_ - company.longestTrainRow_;
     date__ = new string[days__];
     price__ = new double[days__];
-    for (int i = company__.longestTrainRow_, j = 0; i < company__.totalDays_; i++, j++) {
-        date__[j] = company__.date_[i];
-        price__[j] = company__.price_[i];
+    for (int i = company.longestTrainRow_, j = 0; i < company.totalDays_; i++, j++) {
+        date__[j] = company.date_[i];
+        price__[j] = company.price_[i];
     }
     MAtable__ = new double *[days__];
     for (int i = 0; i < days__; i++) {
@@ -1104,10 +1093,10 @@ void CompanyInfo::MATable::create_MAtable() {
     }
     vector<path> MAFilePath;
     if (_pricePath == "price.2") {
-        MAFilePath = get_path(company__.MAType_ + ".2/" + company__.companyName_);
+        MAFilePath = get_path(company.MAType_ + ".2/" + company.companyName_);
     }
     else {
-        MAFilePath = get_path(company__.MAType_ + "/" + company__.companyName_);
+        MAFilePath = get_path(company.MAType_ + "/" + company.companyName_);
     }
     if (MAFilePath.size() == 0) {
         cout << "no MA file" << endl;
@@ -1116,7 +1105,7 @@ void CompanyInfo::MATable::create_MAtable() {
     for (int i = 0; i < MAFilePath.size(); i++) {
         vector<vector<string>> MAFile = read_data(MAFilePath[i]);
         if (int(MAFile.size()) - days__ < 0) {
-            cout << company__.companyName_ + " MA file not old enougth" << endl;
+            cout << company.companyName_ + " MA file not old enougth" << endl;
             exit(1);
         }
         for (int j = 0, k = int(MAFile.size()) - days__; k < MAFile.size(); j++, k++) {
@@ -1125,17 +1114,8 @@ void CompanyInfo::MATable::create_MAtable() {
     }
 }
 
-void CompanyInfo::MATable::round_MATable_obj() {
-    for (int i = 0; i < days__; i++) {
-        price__[i] = round(price__[i], 2);
-        for (int j = 1; j < 257; j++) {
-            MAtable__[i][j] = round(MAtable__[i][j], 2);
-        }
-    }
-}
-
-CompanyInfo::MATable::MATable(CompanyInfo &company) : company__(company) {
-    create_MAtable();
+CompanyInfo::MATable::MATable(CompanyInfo &company) {
+    create_MAtable(company);
 }
 
 CompanyInfo::MATable::~MATable() {
