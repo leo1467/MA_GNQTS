@@ -20,7 +20,7 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 3;
+int _mode = 10;
 string _setCompany = "AAPL";
 string _setWindow = "all";
 int _MAUse = 0;
@@ -466,82 +466,42 @@ void MA_GNQTS::Particle::initialize(double RoR) {
 
 void MA_GNQTS::Particle::measure(BetaMatrix &beta) {
     double r;
-    for_each(buy1_bi__.begin(), buy1_bi__.end(), [&, j = 0](auto &i) mutable {
+    for (int i = 0; i < BUY1_BITS; i++) {
         r = (double)rand() / (double)RAND_MAX;
-        if (r < beta.buy1__[j++]) {
-            i = 1;
+        if (r < beta.buy1__[i]) {
+            buy1_bi__[i] = 1;
         }
         else {
-            i = 0;
+            buy1_bi__[i] = 0;
         }
-    });
-    for_each(buy2_bi__.begin(), buy2_bi__.end(), [&, j = 0](auto &i) mutable {
+    }
+    for (int i = 0; i < BUY2_BITS; i++) {
         r = (double)rand() / (double)RAND_MAX;
-        if (r < beta.buy2__[j++]) {
-            i = 1;
+        if (r < beta.buy2__[i]) {
+            buy2_bi__[i] = 1;
         }
         else {
-            i = 0;
+            buy2_bi__[i] = 0;
         }
-    });
-    for_each(sell1_bi__.begin(), sell1_bi__.end(), [&, j = 0](auto &i) mutable {
+    }
+    for (int i = 0; i < SELL1_BITS; i++) {
         r = (double)rand() / (double)RAND_MAX;
-        if (r < beta.sell1__[j++]) {
-            i = 1;
+        if (r < beta.sell1__[i]) {
+            sell1_bi__[i] = 1;
         }
         else {
-            i = 0;
+            sell1_bi__[i] = 0;
         }
-    });
-    for_each(sell2_bi__.begin(), sell2_bi__.end(), [&, j = 0](auto &i) mutable {
+    }
+    for (int i = 0; i < SELL2_BITS; i++) {
         r = (double)rand() / (double)RAND_MAX;
-        if (r < beta.sell2__[j++]) {
-            i = 1;
+        if (r < beta.sell2__[i]) {
+            sell2_bi__[i] = 1;
         }
         else {
-            i = 0;
+            sell2_bi__[i] = 0;
         }
-    });
-        //    for (int i = 0; i < BUY1_BITS; i++) {
-        //        r = rand();
-        //        r = r / (double)RAND_MAX;
-        //        if (r < beta.buy1__[i]) {
-        //            buy1_bi__[i] = 1;
-        //        }
-        //        else {
-        //            buy1_bi__[i] = 0;
-        //        }
-        //    }
-        //    for (int i = 0; i < BUY2_BITS; i++) {
-        //        r = rand();
-        //        r = r / (double)RAND_MAX;
-        //        if (r < beta.buy2__[i]) {
-        //            buy2_bi__[i] = 1;
-        //        }
-        //        else {
-        //            buy2_bi__[i] = 0;
-        //        }
-        //    }
-        //    for (int i = 0; i < SELL1_BITS; i++) {
-        //        r = rand();
-        //        r = r / (double)RAND_MAX;
-        //        if (r < beta.sell1__[i]) {
-        //            sell1_bi__[i] = 1;
-        //        }
-        //        else {
-        //            sell1_bi__[i] = 0;
-        //        }
-        //    }
-        //    for (int i = 0; i < SELL2_BITS; i++) {
-        //        r = rand();
-        //        r = r / (double)RAND_MAX;
-        //        if (r < beta.sell2__[i]) {
-        //            sell2_bi__[i] = 1;
-        //        }
-        //        else {
-        //            sell2_bi__[i] = 0;
-        //        }
-        //    }
+    }
 }
 
 void MA_GNQTS::Particle::convert_bi_dec() {
@@ -2019,7 +1979,7 @@ int main(int argc, const char *argv[]) {
             case 10 : {
                     //company.output_MA();
                     //company.train("debug", "2020-01-02", "2021-06-30");
-                    //company.train("2020-01-02", "2021-06-30");
+                    //company.train("2012-01-03", "2012-12-31");
                     //company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
                 break;
             }
