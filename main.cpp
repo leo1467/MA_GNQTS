@@ -26,7 +26,9 @@ string _setWindow = "all";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
 int _algoUse = 2;
-string _algo[] = {"QTS", "GQTS", "GNQTS"};
+string _algo[] = {"QTS", "GQTS", "GNQTS", "GNQTS_multiply"};
+double _multiplyUp = 1.01;
+double _multiplyDown = 0.99;
 
 int _techIndex = 0;
 
@@ -242,7 +244,14 @@ public:
     int actualEndRow_{-1};
     CompanyInfo::MATable &table_;
     CompanyInfo &company_;
+    double delta_ = _delta;
+    int compareNew_ = 0;
+    int compareOld_ = 0;
+    double multiplyUp_ = _multiplyUp;
+    double multiplyDown_ = _multiplyDown;
     
+    void GN_multiply(Particle &BbestP, Particle &WorstP, int bits);
+    void GNQTS_multiply();
     void update_global();
     void find_new_row(string startDate, string endDate);
     void set_row_and_break_conditioin(string startDate, int &windowIndex, int &intervalIndex, CompanyInfo::TrainWindow &window);
@@ -259,6 +268,7 @@ public:
     void print_debug_particle(bool debug, int i, ofstream &out);
     void store_exp_gen(int expCnt, int generation);
     void start_gen(bool debug, int expCnt, int generation, ofstream &out);
+    void initial_GNQTS_multiply();
     void start_exp(bool debug, int expCnt, ofstream &out);
     
     MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record);
@@ -637,10 +647,10 @@ void MA_GNQTS::GNQTS() {
             betaMtrix_.buy1__[i] = 1.0 - betaMtrix_.buy1__[i];
         }
         if (globalBest_.buy1_bi__[i] == 1) {
-            betaMtrix_.buy1__[i] += _delta;
+            betaMtrix_.buy1__[i] += delta_;
         }
         if (localWorst_.buy1_bi__[i] == 1) {
-            betaMtrix_.buy1__[i] -= _delta;
+            betaMtrix_.buy1__[i] -= delta_;
         }
     }
     for (int i = 0; i < BUY2_BITS; i++) {
@@ -651,10 +661,10 @@ void MA_GNQTS::GNQTS() {
             betaMtrix_.buy2__[i] = 1.0 - betaMtrix_.buy2__[i];
         }
         if (globalBest_.buy2_bi__[i] == 1) {
-            betaMtrix_.buy2__[i] += _delta;
+            betaMtrix_.buy2__[i] += delta_;
         }
         if (localWorst_.buy2_bi__[i] == 1) {
-            betaMtrix_.buy2__[i] -= _delta;
+            betaMtrix_.buy2__[i] -= delta_;
         }
     }
     for (int i = 0; i < SELL1_BITS; i++) {
@@ -665,10 +675,10 @@ void MA_GNQTS::GNQTS() {
             betaMtrix_.sell1__[i] = 1.0 - betaMtrix_.sell1__[i];
         }
         if (globalBest_.sell1_bi__[i] == 1) {
-            betaMtrix_.sell1__[i] += _delta;
+            betaMtrix_.sell1__[i] += delta_;
         }
         if (localWorst_.sell1_bi__[i] == 1) {
-            betaMtrix_.sell1__[i] -= _delta;
+            betaMtrix_.sell1__[i] -= delta_;
         }
     }
     for (int i = 0; i < SELL2_BITS; i++) {
@@ -679,10 +689,10 @@ void MA_GNQTS::GNQTS() {
             betaMtrix_.sell2__[i] = 1.0 - betaMtrix_.sell2__[i];
         }
         if (globalBest_.sell2_bi__[i] == 1) {
-            betaMtrix_.sell2__[i] += _delta;
+            betaMtrix_.sell2__[i] += delta_;
         }
         if (localWorst_.sell2_bi__[i] == 1) {
-            betaMtrix_.sell2__[i] -= _delta;
+            betaMtrix_.sell2__[i] -= delta_;
         }
     }
 }
@@ -690,34 +700,34 @@ void MA_GNQTS::GNQTS() {
 void MA_GNQTS::GQTS() {
     for (int i = 0; i < BUY1_BITS; i++) {
         if (globalBest_.buy1_bi__[i] == 1) {
-            betaMtrix_.buy1__[i] += _delta;
+            betaMtrix_.buy1__[i] += delta_;
         }
         if (localWorst_.buy1_bi__[i] == 1) {
-            betaMtrix_.buy1__[i] -= _delta;
+            betaMtrix_.buy1__[i] -= delta_;
         }
     }
     for (int i = 0; i < BUY2_BITS; i++) {
         if (globalBest_.buy2_bi__[i] == 1) {
-            betaMtrix_.buy2__[i] += _delta;
+            betaMtrix_.buy2__[i] += delta_;
         }
         if (localWorst_.buy2_bi__[i] == 1) {
-            betaMtrix_.buy2__[i] -= _delta;
+            betaMtrix_.buy2__[i] -= delta_;
         }
     }
     for (int i = 0; i < SELL1_BITS; i++) {
         if (globalBest_.sell1_bi__[i] == 1) {
-            betaMtrix_.sell1__[i] += _delta;
+            betaMtrix_.sell1__[i] += delta_;
         }
         if (localWorst_.sell1_bi__[i] == 1) {
-            betaMtrix_.sell1__[i] -= _delta;
+            betaMtrix_.sell1__[i] -= delta_;
         }
     }
     for (int i = 0; i < SELL2_BITS; i++) {
         if (globalBest_.sell2_bi__[i] == 1) {
-            betaMtrix_.sell2__[i] += _delta;
+            betaMtrix_.sell2__[i] += delta_;
         }
         if (localWorst_.sell2_bi__[i] == 1) {
-            betaMtrix_.sell2__[i] -= _delta;
+            betaMtrix_.sell2__[i] -= delta_;
         }
     }
 }
@@ -725,36 +735,60 @@ void MA_GNQTS::GQTS() {
 void MA_GNQTS::QTS() {
     for (int i = 0; i < BUY1_BITS; i++) {
         if (localBest_.buy1_bi__[i] == 1) {
-            betaMtrix_.buy1__[i] += _delta;
+            betaMtrix_.buy1__[i] += delta_;
         }
         if (localWorst_.buy1_bi__[i] == 1) {
-            betaMtrix_.buy1__[i] -= _delta;
+            betaMtrix_.buy1__[i] -= delta_;
         }
     }
     for (int i = 0; i < BUY2_BITS; i++) {
         if (localBest_.buy2_bi__[i] == 1) {
-            betaMtrix_.buy2__[i] += _delta;
+            betaMtrix_.buy2__[i] += delta_;
         }
         if (localWorst_.buy2_bi__[i] == 1) {
-            betaMtrix_.buy2__[i] -= _delta;
+            betaMtrix_.buy2__[i] -= delta_;
         }
     }
     for (int i = 0; i < SELL1_BITS; i++) {
         if (localBest_.sell1_bi__[i] == 1) {
-            betaMtrix_.sell1__[i] += _delta;
+            betaMtrix_.sell1__[i] += delta_;
         }
         if (localWorst_.sell1_bi__[i] == 1) {
-            betaMtrix_.sell1__[i] -= _delta;
+            betaMtrix_.sell1__[i] -= delta_;
         }
     }
     for (int i = 0; i < SELL2_BITS; i++) {
         if (localBest_.sell2_bi__[i] == 1) {
-            betaMtrix_.sell2__[i] += _delta;
+            betaMtrix_.sell2__[i] += delta_;
         }
         if (localWorst_.sell2_bi__[i] == 1) {
-            betaMtrix_.sell2__[i] -= _delta;
+            betaMtrix_.sell2__[i] -= delta_;
         }
     }
+}
+
+void MA_GNQTS::GN_multiply(Particle &BbestP, Particle &WorstP, int bits) {
+    for (int i = 0; i < bits; i++) {
+        if (BbestP.buy1_bi__[i] != WorstP.buy1_bi__[i]) {
+            compareNew_++;
+        }
+    }
+}
+
+void MA_GNQTS::GNQTS_multiply() {
+    GNQTS();
+    GN_multiply(localBest_, localWorst_, BUY1_BITS);
+    GN_multiply(localBest_, localWorst_, BUY2_BITS);
+    GN_multiply(localBest_, localWorst_, SELL1_BITS);
+    GN_multiply(localBest_, localWorst_, SELL2_BITS);
+    if (compareNew_ > compareOld_) {
+        delta_ *= multiplyUp_;
+    }
+    else {
+        delta_ *= multiplyDown_;
+    }
+    compareOld_ = compareNew_;
+    compareNew_ = 0;
 }
 
 void MA_GNQTS::update_global() {
@@ -783,6 +817,10 @@ void MA_GNQTS::update_global() {
             }
             case 2: {
                 GNQTS();
+                break;
+            }
+            case 3 : {
+                GNQTS_multiply();
                 break;
             }
             default: {
@@ -969,10 +1007,17 @@ void MA_GNQTS::start_gen(bool debug, int expCnt, int generation, ofstream &out) 
     print_debug_beta(debug, out);
 }
 
+void MA_GNQTS::initial_GNQTS_multiply() {
+    delta_ = _delta;
+    compareNew_ = 0;
+    compareOld_ = 0;
+}
+
 void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
     print_debug_exp(debug, expCnt, out);
     globalBest_.initialize();
     betaMtrix_.initilaize();
+    initial_GNQTS_multiply();
     for (int generation = 0; generation < _generationNumber; generation++) {
         start_gen(debug, expCnt, generation, out);
     }
@@ -1979,7 +2024,7 @@ int main(int argc, const char *argv[]) {
             case 10 : {
                     //company.output_MA();
                     //company.train("debug", "2020-01-02", "2021-06-30");
-                    //company.train("2012-01-03", "2012-12-31");
+                    company.train("2012-01-03", "2012-12-31");
                     //company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
                 break;
             }
