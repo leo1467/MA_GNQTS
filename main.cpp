@@ -250,7 +250,7 @@ public:
     double multiplyUp_ = _multiplyUp;
     double multiplyDown_ = _multiplyDown;
     
-    void GN_multiply(Particle &BbestP, Particle &WorstP, int bits);
+    void GN_multiply(vector<int> &bestVector, vector<int> &worstVector, int bits);
     void GNQTS_multiply();
     void update_global();
     void find_new_row(string startDate, string endDate);
@@ -767,9 +767,9 @@ void MA_GNQTS::QTS() {
     }
 }
 
-void MA_GNQTS::GN_multiply(Particle &BbestP, Particle &WorstP, int bits) {
+void MA_GNQTS::GN_multiply(vector<int> &bestVector, vector<int> &worstVector, int bits) {
     for (int i = 0; i < bits; i++) {
-        if (BbestP.buy1_bi__[i] != WorstP.buy1_bi__[i]) {
+        if (bestVector[i] != worstVector[i]) {
             compareNew_++;
         }
     }
@@ -777,10 +777,10 @@ void MA_GNQTS::GN_multiply(Particle &BbestP, Particle &WorstP, int bits) {
 
 void MA_GNQTS::GNQTS_multiply() {
     GNQTS();
-    GN_multiply(localBest_, localWorst_, BUY1_BITS);
-    GN_multiply(localBest_, localWorst_, BUY2_BITS);
-    GN_multiply(localBest_, localWorst_, SELL1_BITS);
-    GN_multiply(localBest_, localWorst_, SELL2_BITS);
+    GN_multiply(localBest_.buy1_bi__, localWorst_.buy1_bi__, BUY1_BITS);
+    GN_multiply(localBest_.buy2_bi__, localWorst_.buy2_bi__, BUY2_BITS);
+    GN_multiply(localBest_.sell1_bi__, localWorst_.sell1_bi__, SELL1_BITS);
+    GN_multiply(localBest_.sell2_bi__, localWorst_.sell2_bi__, SELL2_BITS);
     if (compareNew_ > compareOld_) {
         delta_ *= multiplyUp_;
     }
