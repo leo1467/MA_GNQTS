@@ -251,7 +251,7 @@ public:
     double multiplyDown_ = _multiplyDown;
     
     void compare_bits(vector<int> &bestVector, vector<int> &worstVector, int bits);
-    void compare_mutiply();
+    void compare_and_multiply();
     void update_global();
     void find_new_row(string startDate, string endDate);
     void set_row_and_break_conditioin(string startDate, int &windowIndex, int &intervalIndex, CompanyInfo::TrainWindow &window);
@@ -775,7 +775,7 @@ void MA_GNQTS::compare_bits(vector<int> &bestVector, vector<int> &worstVector, i
     }
 }
 
-void MA_GNQTS::compare_mutiply() {
+void MA_GNQTS::compare_and_multiply() {
     compare_bits(localBest_.buy1_bi__, localWorst_.buy1_bi__, BUY1_BITS);
     compare_bits(localBest_.buy2_bi__, localWorst_.buy2_bi__, BUY2_BITS);
     compare_bits(localBest_.sell1_bi__, localWorst_.sell1_bi__, SELL1_BITS);
@@ -825,7 +825,7 @@ void MA_GNQTS::update_global() {
             if (globalBest_.RoR__ > 0) {
                 GNQTS();
             }            
-            compare_mutiply();
+            compare_and_multiply();
             break;
         }
         default: {
