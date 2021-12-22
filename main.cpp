@@ -20,12 +20,12 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 10;
+int _mode = 0;
 string _setCompany = "AAPL";
-string _setWindow = "all";
+string _setWindow = "M2M";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
-int _algoUse = 2;
+int _algoUse = 3;
 string _algo[] = {"QTS", "GQTS", "GNQTS", "GNQTS_multiply"};
 double _multiplyUp = 1.01;
 double _multiplyDown = 0.99;
@@ -40,7 +40,7 @@ double _testYearLength = stod(_testEndYear) - stod(_testStartYear);
 vector<string> _slidingWindows{"A2A", "YYY2YYY", "YYY2YY", "YYY2YH", "YYY2Y", "YYY2H", "YYY2Q", "YYY2M", "YY2YY", "YY2YH", "YY2Y", "YY2H", "YY2Q", "YY2M", "YH2YH", "YH2Y", "YH2H", "YH2Q", "YH2M", "Y2Y", "Y2H", "Y2Q", "Y2M", "H2H", "H2Q", "H2M", "Q2Q", "Q2M", "M2M", "H#", "Q#", "M#", "20D20", "20D15", "20D10", "20D5", "15D15", "15D10", "15D5", "10D10", "10D5", "5D5", "5D4", "5D3", "5D2", "4D3", "4D2", "3D2", "2D2", "4W4", "4W3", "4W2", "4W1", "3W3", "3W2", "3W1", "2W2", "2W1", "1W1"};
 vector<string> _slidingWindowsEX{"A2A", "36M36", "36M24", "36M18", "36M12", "36M6", "36M3", "36M1", "24M24", "24M18", "24M12", "24M6", "24M3", "24M1", "18M18", "18M12", "18M6", "18M3", "18M1", "12M12", "12M6", "12M3", "12M1", "6M6", "6M3", "6M1", "3M3", "3M1", "1M1", "6M", "3M", "1M", "20D20", "20D15", "20D10", "20D5", "15D15", "15D10", "15D5", "10D10", "10D5", "5D5", "5D4", "5D3", "5D2", "4D3", "4D2", "3D2", "2D2", "4W4", "4W3", "4W2", "4W1", "3W3", "3W2", "3W1", "2W2", "2W1", "1W1"};
 
-double _delta = 0.00012;
+double _delta = 0.00125;
 int _expNumber = 50;
 int _generationNumber = 10000;
 
@@ -250,8 +250,8 @@ public:
     double multiplyUp_ = _multiplyUp;
     double multiplyDown_ = _multiplyDown;
     
-    void GN_multiply(vector<int> &bestVector, vector<int> &worstVector, int bits);
-    void GNQTS_multiply();
+    void compare_bits(vector<int> &bestVector, vector<int> &worstVector, int bits);
+    void compare_mutiply();
     void update_global();
     void find_new_row(string startDate, string endDate);
     void set_row_and_break_conditioin(string startDate, int &windowIndex, int &intervalIndex, CompanyInfo::TrainWindow &window);
@@ -767,7 +767,7 @@ void MA_GNQTS::QTS() {
     }
 }
 
-void MA_GNQTS::GN_multiply(vector<int> &bestVector, vector<int> &worstVector, int bits) {
+void MA_GNQTS::compare_bits(vector<int> &bestVector, vector<int> &worstVector, int bits) {
     for (int i = 0; i < bits; i++) {
         if (bestVector[i] != worstVector[i]) {
             compareNew_++;
@@ -775,12 +775,11 @@ void MA_GNQTS::GN_multiply(vector<int> &bestVector, vector<int> &worstVector, in
     }
 }
 
-void MA_GNQTS::GNQTS_multiply() {
-    GNQTS();
-    GN_multiply(localBest_.buy1_bi__, localWorst_.buy1_bi__, BUY1_BITS);
-    GN_multiply(localBest_.buy2_bi__, localWorst_.buy2_bi__, BUY2_BITS);
-    GN_multiply(localBest_.sell1_bi__, localWorst_.sell1_bi__, SELL1_BITS);
-    GN_multiply(localBest_.sell2_bi__, localWorst_.sell2_bi__, SELL2_BITS);
+void MA_GNQTS::compare_mutiply() {
+    compare_bits(localBest_.buy1_bi__, localWorst_.buy1_bi__, BUY1_BITS);
+    compare_bits(localBest_.buy2_bi__, localWorst_.buy2_bi__, BUY2_BITS);
+    compare_bits(localBest_.sell1_bi__, localWorst_.sell1_bi__, SELL1_BITS);
+    compare_bits(localBest_.sell2_bi__, localWorst_.sell2_bi__, SELL2_BITS);
     if (compareNew_ > compareOld_) {
         delta_ *= multiplyUp_;
     }
@@ -803,32 +802,38 @@ void MA_GNQTS::update_global() {
     if (localBest_.RoR__ > globalBest_.RoR__) {
         globalBest_ = localBest_;
     }
-    if (globalBest_.RoR__ != 0) {
-        switch (_algoUse) {
-            case 0: {
-                if (localBest_.RoR__ > 0) {
-                    QTS();
-                }
-                break;
+    switch (_algoUse) {
+        case 0: {
+            if (localBest_.RoR__ > 0) {
+                QTS();
             }
-            case 1: {
+            break;
+        }
+        case 1: {
+            if (globalBest_.RoR__ > 0) {
                 GQTS();
-                break;
             }
-            case 2: {
+            break;
+        }
+        case 2: {
+            if (globalBest_.RoR__ > 0) {
                 GNQTS();
-                break;
-            }
-            case 3 : {
-                GNQTS_multiply();
-                break;
-            }
-            default: {
-                cout << "wrong algo" << endl;
-                exit(1);
-            }
+            }            
+            break;
+        }
+        case 3 : {
+            if (globalBest_.RoR__ > 0) {
+                GNQTS();
+            }            
+            compare_mutiply();
+            break;
+        }
+        default: {
+            cout << "wrong algo" << endl;
+            exit(1);
         }
     }
+    
 }
 
 void MA_GNQTS::BetaMatrix::initilaize() {
