@@ -102,6 +102,12 @@ bool is_double(const string &s) {
     return !s.empty() && it == s.end();
 }
 
+string set_precision(const double inputDouble, const int n = 10) {
+    stringstream ss;
+    ss << fixed << setprecision(n) << inputDouble;
+    return ss.str();
+}
+
 class CompanyInfo {
 public:
     class MATable {
