@@ -32,7 +32,7 @@ double _multiplyDown = 0.99;
 
 int _techIndex = 0;
 
-path _pricePath = "price"; //若要讀取到小數2位的用price.2，沒有的話用price
+path _pricePath = "price";  //若要讀取到小數2位的用price.2，沒有的話用price
 int _closeCol = 4;
 string _testStartYear = "2012";
 string _testEndYear = "2021";
@@ -44,7 +44,7 @@ double _delta = 0.00125;
 int _expNumber = 50;
 int _generationNumber = 10000;
 
-int _outputDecimal2 = 0; //產生小數2位的股價跟SMA
+int _outputDecimal2 = 0;  //產生小數2位的股價跟SMA
 
 string _outputPath = _MA[_MAUse] + "_result";
 
@@ -55,7 +55,7 @@ vector<vector<string>> read_data(path filePath) {
         cout << filePath.string() + " not found" << endl;
         exit(1);
     }
-//    cout << "reading " + filePath.filename().string() << endl;
+        //    cout << "reading " + filePath.filename().string() << endl;
     string row;
     string cell;
     vector<string> oneRow;
@@ -235,7 +235,7 @@ public:
         static bool check_sell_cross(int stockHold, double MAsell1PreDay, double MAsell2PreDay, double MAsell1Today, double MAsell2Today, int i, int endRow);
         void trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord = false);
         void print_trade_record(ofstream &out);
-        void print_train_data(CompanyInfo &company_, CompanyInfo::MATable &MAtable_,string trainPath, int actualStartRow_, int actualEndRow_);
+        void print_train_data(CompanyInfo &company_, CompanyInfo::MATable &MAtable_, string trainPath, int actualStartRow_, int actualEndRow_);
         
         Particle(int buy1 = 0, int buy2 = 0, int sell1 = 0, int sell2 = 0, bool on = false);
     };
@@ -367,7 +367,7 @@ void Tradition::trainTradition(CompanyInfo::MATable &table, string targetWindow)
                 p_[i].trade(startRow, endRow, table);
             }
             stable_sort(p_.begin(), p_.end(), [](const MA_GNQTS::Particle &a, const MA_GNQTS::Particle &b) { return a.RoR__ > b.RoR__; });
-//                eachBestP_.push_back(p_[0]);
+                //                eachBestP_.push_back(p_[0]);
             p_[0].print_train_data(company_, table, outputPath, startRow, endRow);
         }
     }
@@ -824,13 +824,13 @@ void MA_GNQTS::update_global() {
         case 2: {
             if (globalBest_.RoR__ > 0) {
                 GNQTS();
-            }            
+            }
             break;
         }
-        case 3 : {
+        case 3: {
             if (globalBest_.RoR__ > 0) {
                 GNQTS();
-            }            
+            }
             compare_and_multiply();
             break;
         }
@@ -839,7 +839,6 @@ void MA_GNQTS::update_global() {
             exit(1);
         }
     }
-    
 }
 
 void MA_GNQTS::BetaMatrix::initilaize() {
@@ -1035,7 +1034,7 @@ void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
     update_best();
 }
 
-void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table,string trainPath, int actualStartRow, int actualEndRow) {
+void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table, string trainPath, int actualStartRow, int actualEndRow) {
     if (trainPath != "") {
         trainPath += "/";
     }
@@ -1508,7 +1507,7 @@ void CompanyInfo::store_date_price(path priceFilePath) {
     price_ = new double[totalDays_];
     for (int i = 1, j = 0; i <= totalDays_; i++) {
         date_[i - 1] = priceFile[i][0];
-//        if (priceFile[i][_closeCol] == "null") {
+            //        if (priceFile[i][_closeCol] == "null") {
         if (!is_double(priceFile[i][_closeCol])) {
             price_[i - 1] = price_[i - 2];
         }
@@ -1823,7 +1822,7 @@ public:
     vector<string> removeA2ASort();
     void output_window_rank();
     
-    IRRout(double testLength ,vector<path> &companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath);
+    IRRout(double testLength, vector<path> &companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath);
 };
 
 void IRRout::compute_record_window_RoR(vector<path> &strategies, vector<path>::iterator &strategyPath, ofstream &RoROut, double *totalRate, int i) {
@@ -1869,7 +1868,6 @@ void IRRout::record_window_IRR(string &companyName, ofstream &testRoROut, ofstre
     }
 }
 
-
 void IRRout::record_BH_IRR(int companyIndex, string &setMA, vector<IRRout::WindowIRR> &windowRankList) {
     tmp_.window_ = "B&H";
     CompanyInfo company(companyPricePath_[companyIndex], setMA);
@@ -1879,25 +1877,23 @@ void IRRout::record_BH_IRR(int companyIndex, string &setMA, vector<IRRout::Windo
     windowRankList.push_back(tmp_);
 }
 
-
 void IRRout::sort_by_tradition_IRR(vector<IRRout::WindowIRR> &windowRankList) {
-    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR& a, const WindowIRR& b) {
+    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR &a, const WindowIRR &b) {
         return a.traditionIRR_ > b.traditionIRR_;
     });
 }
 
 void IRRout::sort_by_window_Name(vector<IRRout::WindowIRR> &windowRankList) {
-    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR& a, const WindowIRR& b) {
+    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR &a, const WindowIRR &b) {
         return a.window_ < b.window_;
     });
 }
 
 void IRRout::sort_by_GNQTS_IRR(vector<IRRout::WindowIRR> &windowRankList) {
-    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR& a, const WindowIRR& b) {
+    sort(windowRankList.begin(), windowRankList.end(), [](const WindowIRR &a, const WindowIRR &b) {
         return a.GNQTSIRR_ > b.GNQTSIRR_;
     });
 }
-
 
 void IRRout::rank_window(vector<IRRout::WindowIRR> &windowRankList) {
     for (int i = 0; i < windowRankList.size(); i++) {
@@ -1981,7 +1977,7 @@ void IRRout::output_window_rank() {
     rankOut.close();
 }
 
-IRRout::IRRout(double testLength ,vector<path> &companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath) : testLength_(testLength) ,companyPricePath_(companyPricePath), slidingWindows_(slidingWindows), totalCPLV_(totalCPLV), outputPath_(outputPath) {
+IRRout::IRRout(double testLength, vector<path> &companyPricePath, vector<string> slidingWindows, string setMA, double totalCPLV, string outputPath) : testLength_(testLength), companyPricePath_(companyPricePath), slidingWindows_(slidingWindows), totalCPLV_(totalCPLV), outputPath_(outputPath) {
     ofstream IRROut;
     IRROut.open("test_IRR.csv");
     for (int companyIndex = 0; companyIndex < companyPricePath_.size(); companyIndex++) {
@@ -1991,8 +1987,6 @@ IRRout::IRRout(double testLength ,vector<path> &companyPricePath, vector<string>
     IRROut.close();
     companyPricePath.clear();
 }
-
-
 
 int main(int argc, const char *argv[]) {
     time_point begin = steady_clock::now();
@@ -2016,26 +2010,26 @@ int main(int argc, const char *argv[]) {
         CompanyInfo company(targetPath, setMA);
         cout << company.companyName_ << endl;
         switch (setMode) {
-            case 0 : {
+            case 0: {
                 company.train(setWindow);
                 break;
             }
-            case 1 : {
+            case 1: {
                 company.test(setWindow);
                 break;
             }
-            case 2 : {
+            case 2: {
                 Tradition tradition(company, setWindow);
                 break;
             }
-            case 3 : {
+            case 3: {
                 IRRout outputIRR(_testYearLength, companyPricePath, _slidingWindows, setMA, TOTAL_CP_LV, _outputPath);
                 break;
             }
-            case 10 : {
+            case 10: {
                     //company.output_MA();
                     //company.train("debug", "2020-01-02", "2021-06-30");
-                    company.train("2012-01-03", "2012-12-31");
+                company.train("2012-01-03", "2012-12-31");
                     //company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
                 break;
             }
@@ -2045,416 +2039,3 @@ int main(int argc, const char *argv[]) {
     cout << "time: " << duration_cast<milliseconds>(end - begin).count() / 1000.0 << " s" << endl;
     return 0;
 }
-
-/*transpose MAtable
- vector<double> tmp;
- allMA__.push_back(tmp);
- switch (company__.MAType_[0]) {
- case 'S':
- for (int MA = 1; MA < 257; MA++) {
- for (int dateRow = MA - 1; dateRow < company__.totalDays_; dateRow++) {
- double MARangePriceSum = 0;
- for (int i = dateRow, j = MA; j > 0; i--, j--) {
- MARangePriceSum += company__.price_[i];
- }
- tmp.push_back(MARangePriceSum / MA);
- }
- allMA__.push_back(tmp);
- tmp.clear();
- }
- break;
- case 'W':
- break;
- case 'E':
- break;
- }
- for (auto it = allMA__.begin() + 1; it != allMA__.end(); it++) {
- reverse(it->begin(), it->end());
- it->resize(days__);
- reverse(it->begin(), it->end());
- }
- vector<vector<double>> v;
- v.resize(days__);
- for (auto it = v.begin(); it != v.end(); it++) {
- it->resize(257);
- }
- for (int i = 0; i < days__; i++) {
- for (int j = 1; j < 257; j++) {
- v[i][j] = allMA__[j][i];
- }
- }
- allMA__ = v;
- */
-
-/*calculate time
- time_point begin = std::chrono::steady_clock::now();
- time_point end = std::chrono::steady_clock::now();
- cout << "time: " << duration_cast<seconds>(end - begin).count() << "[s]" << endl;
- cout << "time: " << duration_cast<microseconds>(end - begin).count() << "[µs]" << endl;
- cout << "time: " << duration_cast<nanoseconds>(end - begin).count() << "[µs]" << endl;
- */
-
-/*測試particle交易用
- MA_GNQTS::Particle p;
- p.buy1_dec__ = 5;
- p.buy2_dec__ = 20;
- p.sell1_dec__ = 5;
- p.sell2_dec__ = 20;
- CompanyInfo::MATable table(company);
- int x{-1};
- int y{-1};
- for (int i = 0; i < table.trainDays__; i++) {
- if (table.tableDate__[i] == "2012-01-02") {
- x = i;
- break;
- }
- }
- for (int i = 0; i < table.trainDays__; i++) {
- if (table.tableDate__[i] == "2020-12-31") {
- y = i;
- break;
- }
- }
- MA_GNQTS::Trade(x, y, table, p, company);
- */
-
-/*for instatnt trade
- MA_GNQTS::Trade trade1("2020-01-02", "2021-06-30", 5, 20, 5, 20, company);
- MA_GNQTS::Trade trade2("2020-01-02", "2021-06-30", 5, 60, 5, 60, company);
- MA_GNQTS::Trade trade3("2020-01-02", "2021-06-30", 6, 18, 6, 18, company);
- MA_GNQTS::Trade trade4("2020-01-02", "2021-06-30", 6, 50, 6, 50, company);
- MA_GNQTS::Trade trade5("2020-01-02", "2021-06-30", 18, 50, 18, 50, company);
- MA_GNQTS::Trade trade6("2020-01-02", "2021-06-30", 20, 60, 20, 60, company);
- */
-
-/*檢查MAtable大小
- CompanyInfo::MATable table(company);
- cout << table.tableDate__[0] << endl;
- cout << table.tableDate__[table.trainDays__ - 1] << endl;
- */
-
-/*
- class Trade {
- public:
- vector<double> MAbuy1__;
- vector<double> MAbuy2__;
- vector<double> MAsell1__;
- vector<double> MAsell2__;
- string startDate__;
- string endDate__;
- int buy1__;
- int buy2__;
- int sell1__;
- int sell2__;
- int startRow__{-1};
- int endRow__{-1};
- vector<string> tradeRecord__;
- CompanyInfo &company__;
- string *date__;
- double *price__;
- int buyNum__{0};
- int sellNum__{0};
- double RoR__{0};
- 
- void cal_instant_trade_MA();
- void tradeDetail();
- void outputTradeRecord();
- static bool check_buy_cross(int, double, double, double, double, int, int);
- static bool check_sell_cross(int, double, double, double, double, int, int);
- void round_price();
- Trade(string, string, int, int, int, int, CompanyInfo &);
- Trade(int, int, CompanyInfo::MATable &, Particle &, CompanyInfo &);
- };
- */
-
-/*
- bool MA_GNQTS::Trade::check_buy_cross(int stockHold, double MAbuy1PreDay, double MAbuy2PreDay, double MAbuy1Today, double MAbuy2Today, int i, int endRow) {
- return stockHold == 0 && MAbuy1PreDay <= MAbuy2PreDay && MAbuy1Today > MAbuy2Today && i != endRow;
- }
- 
- bool MA_GNQTS::Trade::check_sell_cross(int stockHold, double MAsell1PreDay, double MAsell2PreDay, double MAsell1Today, double MAsell2Today, int i, int endRow) {
- return stockHold != 0 && ((MAsell1PreDay >= MAsell2PreDay && MAsell1Today < MAsell2Today) || i == endRow);
- }
- 
- void MA_GNQTS::Trade::round_price() {
- for (int i = 0; i < company__.totalDays_; i++) {
- company__.price_[i] = round(company__.price_[i], 2);
- }
- }
- 
- void MA_GNQTS::Trade::cal_instant_trade_MA() {
- for (int i = 0; i < company__.totalDays_; i++) {
- if (company__.date_[i] == startDate__) {
- startRow__ = i;
- break;
- }
- }
- for (int i = 0; i < company__.totalDays_; i++) {
- if (company__.date_[i] == endDate__) {
- endRow__ = i;
- break;
- }
- }
- if (startRow__ == -1 || endRow__ == -1) {
- cout << "date is out of range" << endl;
- exit(1);
- }
- switch (company__.MAType_[0]) {
- case 'S': {
- for (int dateRow = startRow__ - 1; dateRow <= endRow__; dateRow++) {
- double buyLowMARangePriceSum{0};
- double buyHighMARangePriceSum{0};
- double sellLowMARangePriceSum{0};
- double sellHighMARangePriceSum{0};
- for (int j = buy1__, k = dateRow; j > 0; j--, k--) {
- buyLowMARangePriceSum += company__.price_[k];
- }
- for (int j = buy2__, k = dateRow; j > 0; j--, k--) {
- buyHighMARangePriceSum += company__.price_[k];
- }
- for (int j = sell1__, k = dateRow; j > 0; j--, k--) {
- sellLowMARangePriceSum += company__.price_[k];
- }
- for (int j = sell2__, k = dateRow; j > 0; j--, k--) {
- sellHighMARangePriceSum += company__.price_[k];
- }
- MAbuy1__.push_back(round(buyLowMARangePriceSum / buy1__, 2));
- MAbuy2__.push_back(round(buyHighMARangePriceSum / buy2__, 2));
- MAsell1__.push_back(round(sellLowMARangePriceSum / sell1__, 2));
- MAsell2__.push_back(round(sellHighMARangePriceSum / sell2__, 2));
- }
- 
- break;
- }
- case 'W': {
- break;
- }
- case 'E': {
- break;
- }
- }
- }
- 
- void MA_GNQTS::Trade::tradeDetail() {
- int stockHold{0};
- double remain{TOTAL_CP_LV};
- tradeRecord__.push_back(",date,price,buy1-1d,buy2-1d,buy1,buy2,sell1-1d, sell2-1d,sell1,sell2,stockHold,remain,capital lv\r");
- for (int i = startRow__, j = 1; i <= endRow__; i++, j++) {
- if (check_buy_cross(stockHold, MAbuy1__[j - 1], MAbuy2__[j - 1], MAbuy1__[j], MAbuy2__[j], i, endRow__) && remain >= price__[i]) {
- stockHold = floor(remain / price__[i]);
- remain = floor(remain - stockHold * price__[i]);
- buyNum__++;
- tradeRecord__.push_back("buy," + date__[i] + "," + to_string(price__[i]) + "," + to_string(MAbuy1__[j - 1]) + "," + to_string(MAbuy2__[j - 1]) + "," + to_string(MAbuy1__[j]) + "," + to_string(MAbuy2__[j]) + ",,,,," + to_string(stockHold) + "," + to_string(remain) + "," + to_string(remain + stockHold * price__[i]) + "\r");
- }
- else if (check_sell_cross(stockHold, MAsell1__[j - 1], MAsell2__[j - 1], MAsell1__[j], MAsell2__[j], i, endRow__)) {
- remain = remain + (double)stockHold * price__[i];
- stockHold = 0;
- sellNum__++;
- tradeRecord__.push_back("sell," + date__[i] + "," + to_string(price__[i]) + ",,,,," + to_string(MAsell1__[j - 1]) + "," + to_string(MAsell2__[j - 1]) + "," + to_string(MAsell1__[j]) + "," + to_string(MAsell2__[j]) + "," + to_string(stockHold) + "," + to_string(remain) + "," + to_string(remain + stockHold * price__[i]) + "\r\r");
- }
- }
- RoR__ = (remain - TOTAL_CP_LV) / TOTAL_CP_LV * 100;
- tradeRecord__.push_back("buyNum," + to_string(buyNum__) + ",sellNum," + to_string(sellNum__) + "\rremain," + to_string(remain) + "\rreturn rate," + to_string(RoR__) + "%\r");
- }
- 
- void MA_GNQTS::Trade::outputTradeRecord() {
- ofstream out;
- out.open(company__.companyName_ + "_instantTrade_" + startDate__ + "_" + endDate__ + "_" + to_string(buy1__) + "_" + to_string(buy2__) + "_" + to_string(sell1__) + "_" + to_string(sell2__) + ".csv");
- for_each(tradeRecord__.begin(), tradeRecord__.end(), [&out](auto record) {
- out << record;
- });
- out.close();
- }
- 
- MA_GNQTS::Trade::Trade(string startDate, string endDate, int buy1, int buy2, int sell1, int sell2, CompanyInfo &company) : startDate__(startDate), endDate__(endDate), buy1__(buy1), buy2__(buy2), sell1__(sell1), sell2__(sell2), company__(company), date__(company.date_), price__(company.price_) {
- cal_instant_trade_MA();
- round_price();
- tradeDetail();
- outputTradeRecord();
- if (buyNum__ != sellNum__) {
- cout << buyNum__ << "," << sellNum__ << endl;
- cout << "buyNum__ != sellNum__" << endl;
- exit(1);
- }
- }
- 
- MA_GNQTS::Trade::Trade(int trainStartRow, int trainEndRow, CompanyInfo::MATable &table, Particle &particle, CompanyInfo &company) : startRow__(trainStartRow), endRow__(trainEndRow), buy1__(particle.buy1_dec__), buy2__(particle.buy2_dec__), sell1__(particle.sell1_dec__), sell2__(particle.sell2_dec__), company__(company), date__(table.tableDate__), price__(table.tablePrice__) {
- for (int i = trainStartRow - 1; i <= trainEndRow; i++) {
- MAbuy1__.push_back(table.MAValues__[i][particle.buy1_dec__]);
- MAbuy2__.push_back(table.MAValues__[i][particle.buy2_dec__]);
- MAsell1__.push_back(table.MAValues__[i][particle.sell1_dec__]);
- MAsell2__.push_back(table.MAValues__[i][particle.sell2_dec__]);
- }
- tradeDetail();
- particle.buyNum__ = buyNum__;
- particle.sellNum__ = sellNum__;
- particle.tradeRecord__ = tradeRecord__;
- //            outputTradeRecord();
- }
- */
-
-/*
- void MA_GNQTS::initialize_local_particles() {
- for (int i = 0; i < PARTICAL_AMOUNT; i++) {
- fill(particles_[i].buy1_bi__.begin(), particles_[i].buy1_bi__.end(), 0);
- fill(particles_[i].buy2_bi__.begin(), particles_[i].buy2_bi__.end(), 0);
- fill(particles_[i].sell1_bi__.begin(), particles_[i].sell1_bi__.end(), 0);
- fill(particles_[i].sell2_bi__.begin(), particles_[i].sell2_bi__.end(), 0);
- particles_[i].buy1_dec__ = 0;
- particles_[i].buy2_dec__ = 0;
- particles_[i].sell1_dec__ = 0;
- particles_[i].sell2_dec__ = 0;
- particles_[i].buyNum__ = 0;
- particles_[i].sellNum__ = 0;
- particles_[i].RoR__ = 0;
- }
- fill(localBest_.buy1_bi__.begin(), localBest_.buy1_bi__.end(), 0);
- fill(localBest_.buy2_bi__.begin(), localBest_.buy2_bi__.end(), 0);
- fill(localBest_.sell1_bi__.begin(), localBest_.sell1_bi__.end(), 0);
- fill(localBest_.sell2_bi__.begin(), localBest_.sell2_bi__.end(), 0);
- localBest_.buy1_dec__ = 0;
- localBest_.buy2_dec__ = 0;
- localBest_.sell1_dec__ = 0;
- localBest_.sell2_dec__ = 0;
- localBest_.buyNum__ = 0;
- localBest_.sellNum__ = 0;
- localBest_.RoR__ = 0;
- 
- fill(localWorst_.buy1_bi__.begin(), localWorst_.buy1_bi__.end(), 0);
- fill(localWorst_.buy2_bi__.begin(), localWorst_.buy2_bi__.end(), 0);
- fill(localWorst_.sell1_bi__.begin(), localWorst_.sell1_bi__.end(), 0);
- fill(localWorst_.sell2_bi__.begin(), localWorst_.sell2_bi__.end(), 0);
- localWorst_.buy1_dec__ = 0;
- localWorst_.buy2_dec__ = 0;
- localWorst_.sell1_dec__ = 0;
- localWorst_.sell2_dec__ = 0;
- localWorst_.buyNum__ = 0;
- localWorst_.sellNum__ = 0;
- localWorst_.RoR__ = 1000000;
- }
- */
-
-/*
- void MA_GNQTS::measure(Particle &particle) {
- double r;
- for (int i = 0; i < BUY1_BITS; i++) {
- r = rand();
- r = r / (double)RAND_MAX;
- if (r < betaMtrix_.buy1__[i]) {
- particle.buy1_bi__[i] = 1;
- }
- else {
- particle.buy1_bi__[i] = 0;
- }
- }
- for (int i = 0; i < BUY2_BITS; i++) {
- r = rand();
- r = r / (double)RAND_MAX;
- if (r < betaMtrix_.buy2__[i]) {
- particle.buy2_bi__[i] = 1;
- }
- else {
- particle.buy2_bi__[i] = 0;
- }
- }
- for (int i = 0; i < SELL1_BITS; i++) {
- r = rand();
- r = r / (double)RAND_MAX;
- if (r < betaMtrix_.sell1__[i]) {
- particle.sell1_bi__[i] = 1;
- }
- else {
- particle.sell1_bi__[i] = 0;
- }
- }
- for (int i = 0; i < SELL2_BITS; i++) {
- r = rand();
- r = r / (double)RAND_MAX;
- if (r < betaMtrix_.sell2__[i]) {
- particle.sell2_bi__[i] = 1;
- }
- else {
- particle.sell2_bi__[i] = 0;
- }
- }
- }
- */
-
-/*
- void MA_GNQTS::convert_bi_to_dec(Particle &particle) {
- for (int i = 0, j = BUY1_BITS - 1; i < BUY1_BITS; i++, j--) {
- particle.buy1_dec__ += pow(2, j) * particle.buy1_bi__[i];
- }
- for (int i = 0, j = BUY2_BITS - 1; i < BUY2_BITS; i++, j--) {
- particle.buy2_dec__ += pow(2, j) * particle.buy2_bi__[i];
- }
- for (int i = 0, j = SELL1_BITS - 1; i < SELL1_BITS; i++, j--) {
- particle.sell1_dec__ += pow(2, j) * particle.sell1_bi__[i];
- }
- for (int i = 0, j = SELL2_BITS - 1; i < SELL2_BITS; i++, j--) {
- particle.sell2_dec__ += pow(2, j) * particle.sell2_bi__[i];
- }
- }
- */
-
-/*
- void MA_GNQTS::GNQTStrade(int trainStartRow, int trainEndRow, Particle &particle) {
- int stockHold{0};
- double remain{TOTAL_CP_LV};
- for (int i = trainStartRow; i <= trainEndRow; i++) {
- //        if (stockHold == 0 && table.MAValues__[i - 1][particle.buy1_dec__] <= table.MAValues__[i - 1][particle.buy2_dec__] && table.MAValues__[i][particle.buy1_dec__] > table.MAValues__[i][particle.buy2_dec__] && i != trainEndRow) {
- if (Trade::check_buy_cross(stockHold, MAtable_.MAValues__[i - 1][particle.buy1_dec__], MAtable_.MAValues__[i - 1][particle.buy2_dec__], MAtable_.MAValues__[i][particle.buy1_dec__], MAtable_.MAValues__[i][particle.buy2_dec__], i, trainEndRow) && remain >= MAtable_.tablePrice__[i]) {
- stockHold = floor(remain / MAtable_.tablePrice__[i]);
- remain = remain - stockHold * MAtable_.tablePrice__[i];
- particle.buyNum__++;
- }
- //        else if (stockHold != 0 && ((table.MAValues__[i - 1][particle.sell1_dec__] >= table.MAValues__[i - 1][particle.sell2_dec__] && table.MAValues__[i][particle.sell1_dec__] < table.MAValues__[i][particle.sell2_dec__]) || i == trainEndRow)) {
- else if (Trade::check_sell_cross(stockHold, MAtable_.MAValues__[i - 1][particle.sell1_dec__], MAtable_.MAValues__[i - 1][particle.sell2_dec__], MAtable_.MAValues__[i][particle.sell1_dec__], MAtable_.MAValues__[i][particle.sell2_dec__], i, trainEndRow)) {
- remain = remain + (double)stockHold * MAtable_.tablePrice__[i];
- stockHold = 0;
- particle.sellNum__++;
- }
- }
- if (particle.buyNum__ != particle.sellNum__) {
- cout << particle.buyNum__ << "," << particle.sellNum__ << endl;
- cout << "particle.buyNum__ != particle.sellNum__" << endl;
- exit(1);
- }
- particle.RoR__ = (remain - TOTAL_CP_LV) / TOTAL_CP_LV * 100;
- }
- */
-
-    //void MA_GNQTS::print_all_particle() {
-    //    for (int i = 0; i < particles_.size(); i++) {
-    //        cout << "P:" << i << endl;
-    //        for_each(particles_[i].buy1_bi__.begin(), particles_[i].buy1_bi__.end(), [](auto i) { cout << i << ","; });
-    //        cout << "|";
-    //        for_each(particles_[i].buy2_bi__.begin(), particles_[i].buy2_bi__.end(), [](auto i) { cout << i << ","; });
-    //        cout << "|";
-    //        for_each(particles_[i].sell1_bi__.begin(), particles_[i].sell1_bi__.end(), [](auto i) { cout << i << ","; });
-    //        cout << "|";
-    //        for_each(particles_[i].sell2_bi__.begin(), particles_[i].sell2_bi__.end(), [](auto i) { cout << i << ","; });
-    //        cout << "|";
-    //        cout << particles_[i].RoR__ << "%" << endl;
-    //        cout << particles_[i].buy1_dec__ << "," << particles_[i].buy2_dec__ << "," << particles_[i].sell1_dec__ << "," << particles_[i].sell2_dec__ << endl;
-    //    }
-    //}
-
-    //void MA_GNQTS::print_betaMatrix() {
-    //    for (int i = 0; i < BUY1_BITS; i++) {
-    //        cout << betaMtrix_.buy1__[i] << ",";
-    //    }
-    //    cout << "|";
-    //    for (int i = 0; i < BUY2_BITS; i++) {
-    //        cout << betaMtrix_.buy2__[i] << ",";
-    //    }
-    //    cout << "|";
-    //    for (int i = 0; i < SELL1_BITS; i++) {
-    //        cout << betaMtrix_.sell1__[i] << ",";
-    //    }
-    //    cout << "|";
-    //    for (int i = 0; i < SELL2_BITS; i++) {
-    //        cout << betaMtrix_.sell2__[i] << ",";
-    //    }
-    //    cout << endl;
-    //}
