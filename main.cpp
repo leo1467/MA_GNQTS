@@ -540,15 +540,15 @@ void MA_GNQTS::Particle::convert_bi_dec() {
 }
 
 void MA_GNQTS::Particle::record_buy_info(CompanyInfo::MATable &table, int i, int stockHold) {
-    tradeRecord__.push_back("buy," + table.date__[i] + "," + to_string(table.price__[i]) + "," + to_string(table.MAtable__[i - 1][buy1_dec__]) + "," + to_string(table.MAtable__[i - 1][buy2_dec__]) + "," + to_string(table.MAtable__[i][buy1_dec__]) + "," + to_string(table.MAtable__[i][buy2_dec__]) + "," + to_string(stockHold) + "," + to_string(remain__) + "," + to_string(remain__ + stockHold * table.price__[i]) + "\r");
+    tradeRecord__.push_back("buy," + table.date__[i] + "," + set_precision(table.price__[i]) + "," + set_precision(table.MAtable__[i - 1][buy1_dec__]) + "," + set_precision(table.MAtable__[i - 1][buy2_dec__]) + "," + set_precision(table.MAtable__[i][buy1_dec__]) + "," + set_precision(table.MAtable__[i][buy2_dec__]) + "," + to_string(stockHold) + "," + set_precision(remain__) + "," + set_precision(remain__ + stockHold * table.price__[i]) + "\r");
 }
 
 void MA_GNQTS::Particle::record_sell_info(CompanyInfo::MATable &table, int i, int stockHold) {
-    tradeRecord__.push_back("sell," + table.date__[i] + "," + to_string(table.price__[i]) + "," + to_string(table.MAtable__[i - 1][sell1_dec__]) + "," + to_string(table.MAtable__[i - 1][sell2_dec__]) + "," + to_string(table.MAtable__[i][sell1_dec__]) + "," + to_string(table.MAtable__[i][sell2_dec__]) + "," + to_string(stockHold) + "," + to_string(remain__) + "," + to_string(remain__ + stockHold * table.price__[i]) + "\r\r");
+    tradeRecord__.push_back("sell," + table.date__[i] + "," + set_precision(table.price__[i]) + "," + set_precision(table.MAtable__[i - 1][sell1_dec__]) + "," + set_precision(table.MAtable__[i - 1][sell2_dec__]) + "," + set_precision(table.MAtable__[i][sell1_dec__]) + "," + set_precision(table.MAtable__[i][sell2_dec__]) + "," + to_string(stockHold) + "," + set_precision(remain__) + "," + set_precision(remain__ + stockHold * table.price__[i]) + "\r\r");
 }
 
 void MA_GNQTS::Particle::record_last_info() {
-    tradeRecord__.push_back("buyNum," + to_string(buyNum__) + ",sellNum," + to_string(sellNum__) + "\rremain," + to_string(remain__) + "\rreturn rate," + to_string(RoR__) + "%\r");
+    tradeRecord__.push_back("buyNum," + to_string(buyNum__) + ",sellNum," + to_string(sellNum__) + "\rremain," + set_precision(remain__) + "\rreturn rate," + set_precision(RoR__) + "%\r");
 }
 
 bool MA_GNQTS::Particle::check_buy_cross(int stockHold, double MAbuy1PreDay, double MAbuy2PreDay, double MAbuy1Today, double MAbuy2Today, int i, int endRow) {
@@ -970,7 +970,7 @@ CompanyInfo::TrainWindow MA_GNQTS::set_wondow(string &startDate, string &targetW
 ofstream MA_GNQTS::set_debug_file(bool debug) {
     ofstream out;
     if (debug) {
-        string delta = to_string(_delta);
+        string delta = set_precision(_delta);
         delta.erase(delta.find_last_not_of('0') + 1, std::string::npos);
         out.open("debug_" + company_.companyName_ + "_" + company_.MAType_ + "_" + _algo[_algoUse] + "_" + delta + "_" + table_.date__[actualStartRow_] + "_" + table_.date__[actualEndRow_] + ".csv");
     }
@@ -1040,7 +1040,7 @@ void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MAT
         trainPath += "/";
     }
     else {
-        string delta = to_string(_delta);
+        string delta = set_precision(_delta);
         delta.erase(delta.find_last_not_of('0') + 1, std::string::npos);
         trainPath = company.MAType_ + "_" + company.companyName_ + "_" + _algo[_algoUse] + "_" + delta + "_";
     }
