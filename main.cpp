@@ -401,21 +401,21 @@ void CalculateTest::print_test_data(int intervalIndex, MA_GNQTS::Particle &p, Co
     string period = table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]];
     out.open(testFileOutputPath + window.windowName__ + "/" + period + ".csv");
     out << "algo," + _algo[_algoUse] << endl;
-    out << "delta," << _delta << endl;
+    out << "delta," + set_precision(_delta) << endl;
     out << "exp," << _expNumber << endl;
     out << "gen," << _generationNumber << endl;
     out << "p amount," << PARTICAL_AMOUNT << endl;
     out << endl;
-    out << "initial capital," << TOTAL_CP_LV << endl;
-    out << "final capital," << p.remain__ << endl;
-    out << "final return," << p.remain__ - TOTAL_CP_LV << endl;
+    out << "initial capital," + set_precision(TOTAL_CP_LV) << endl;
+    out << "final capital," + set_precision(p.remain__) << endl;
+    out << "final return," + set_precision(p.remain__ - TOTAL_CP_LV) << endl;
     out << endl;
     out << "buy1," << p.buy1_dec__ << endl;
     out << "buy2," << p.buy2_dec__ << endl;
     out << "sell1," << p.sell1_dec__ << endl;
     out << "sell2," << p.sell2_dec__ << endl;
     out << "trade," << p.sellNum__ << endl;
-    out << "return rate," << p.RoR__ << "%" << endl;
+    out << "return rate," + set_precision(p.RoR__) + "%" << endl;
     out << endl;
     out << "best exp," << endl;
     out << "best gen," << endl;
@@ -623,7 +623,7 @@ void MA_GNQTS::Particle::print(ofstream &out, bool debug) {
         out << ",";
         for_each(sell2_bi__.begin(), sell2_bi__.end(), [&out](auto i) { out << i << ","; });
         out << ",";
-        out << RoR__ << "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
+        out << set_precision(RoR__) + "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
     }
     else {
         for_each(buy1_bi__.begin(), buy1_bi__.end(), [](auto i) { cout << i << ","; });
@@ -634,7 +634,7 @@ void MA_GNQTS::Particle::print(ofstream &out, bool debug) {
         cout << "|";
         for_each(sell2_bi__.begin(), sell2_bi__.end(), [](auto i) { cout << i << ","; });
         cout << "|";
-        cout << RoR__ << "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
+        cout << set_precision(RoR__) + "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
     }
 }
 
@@ -852,24 +852,24 @@ void MA_GNQTS::BetaMatrix::initilaize() {
 void MA_GNQTS::BetaMatrix::print(ofstream &out, bool debug) {
     if (debug) {
         out << "beta matrix" << endl;
-        for_each(buy1__.begin(), buy1__.end(), [&out](auto i) { out << i << ","; });
+        for_each(buy1__.begin(), buy1__.end(), [&out](auto i) { out << set_precision(i) + ","; });
         out << ",";
-        for_each(buy2__.begin(), buy2__.end(), [&out](auto i) { out << i << ","; });
+        for_each(buy2__.begin(), buy2__.end(), [&out](auto i) { out << set_precision(i) + ","; });
         out << ",";
-        for_each(sell1__.begin(), sell1__.end(), [&out](auto i) { out << i << ","; });
+        for_each(sell1__.begin(), sell1__.end(), [&out](auto i) { out << set_precision(i) + ","; });
         out << ",";
-        for_each(sell2__.begin(), sell2__.end(), [&out](auto i) { out << i << ","; });
+        for_each(sell2__.begin(), sell2__.end(), [&out](auto i) { out << set_precision(i) + ","; });
         out << endl;
     }
     else {
         cout << "beta matrix" << endl;
-        for_each(buy1__.begin(), buy1__.end(), [](auto i) { cout << i << ","; });
+        for_each(buy1__.begin(), buy1__.end(), [](auto i) { cout << set_precision(i) + ","; });
         cout << "|";
-        for_each(buy2__.begin(), buy2__.end(), [](auto i) { cout << i << ","; });
+        for_each(buy2__.begin(), buy2__.end(), [](auto i) { cout << set_precision(i) + ","; });
         cout << "|";
-        for_each(sell1__.begin(), sell1__.end(), [](auto i) { cout << i << ","; });
+        for_each(sell1__.begin(), sell1__.end(), [](auto i) { cout << set_precision(i) + ","; });
         cout << "|";
-        for_each(sell2__.begin(), sell2__.end(), [](auto i) { cout << i << ","; });
+        for_each(sell2__.begin(), sell2__.end(), [](auto i) { cout << set_precision(i) + ","; });
         cout << endl;
     }
 }
@@ -1047,21 +1047,21 @@ void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MAT
     ofstream out;
     out.open(trainPath + table.date__[actualStartRow] + "_" + table.date__[actualEndRow] + ".csv");
     out << "algo," + _algo[_algoUse] << endl;
-    out << "delta," << _delta << endl;
+    out << "delta," + set_precision(_delta) << endl;
     out << "exp," << _expNumber << endl;
     out << "gen," << _generationNumber << endl;
     out << "p amount," << PARTICAL_AMOUNT << endl;
     out << endl;
-    out << "initial capital," << TOTAL_CP_LV << endl;
-    out << "final capital," << remain__ << endl;
-    out << "final return," << remain__ - TOTAL_CP_LV << endl;
+    out << "initial capital," + set_precision(TOTAL_CP_LV) << endl;
+    out << "final capital," + set_precision(remain__) << endl;
+    out << "final return," + set_precision(remain__ - TOTAL_CP_LV) << endl;
     out << endl;
     out << "buy1," << buy1_dec__ << endl;
     out << "buy2," << buy2_dec__ << endl;
     out << "sell1," << sell1_dec__ << endl;
     out << "sell2," << sell2_dec__ << endl;
     out << "trade," << sellNum__ << endl;
-    out << "return rate," << RoR__ << "%" << endl;
+    out << "return rate," + set_precision(RoR__) + "%" << endl;
     out << endl;
     out << "best exp," << exp__ << endl;
     out << "best gen," << gen__ << endl;
@@ -1701,7 +1701,7 @@ void CompanyInfo::output_MATable() {
     for (int i = 0; i < table.days__; i++) {
         out << table.date__[i] + ",";
         for (int j = 1; j < 257; j++) {
-            out << table.MAtable__[i][j] << ",";
+            out << set_precision(table.MAtable__[i][j]) + ",";
         }
         out << endl;
     }
@@ -1828,7 +1828,7 @@ public:
 
 void IRRout::compute_record_window_RoR(vector<path> &strategies, vector<path>::iterator &strategyPath, ofstream &RoROut, double *totalRate, int i) {
     string strategyName = strategyPath->stem().string();
-    vector<vector<string> > testFile = read_data(*strategyPath);
+    vector<vector<string>> testFile = read_data(*strategyPath);
     double RoR = stod(testFile[15][1]);
     RoROut << strategyName + "," + testFile[10][1] + "," + testFile[11][1] + "," + testFile[12][1] + "," + testFile[13][1] + "," + testFile[15][1] << endl;
     if (strategyPath == strategies.begin()) {
@@ -1864,8 +1864,8 @@ void IRRout::record_window_IRR(string &companyName, ofstream &testRoROut, ofstre
         totalRate[0]--;
         totalRate[1]--;
         windowRankList.push_back(tmp_);
-        testRoROut << ",,,,,," + windowName + "," << totalRate[0] << "," << tmp_.GNQTSIRR_ << endl;
-        traditionRoROut << ",,,,,," + windowName + "," << totalRate[1] << "," << tmp_.traditionIRR_ << endl;
+        testRoROut << ",,,,,," + windowName + "," + set_precision(totalRate[0]) + "," + set_precision(tmp_.GNQTSIRR_) << endl;
+        traditionRoROut << ",,,,,," + windowName + "," + set_precision(totalRate[1]) + "," + set_precision(tmp_.traditionIRR_) << endl;
     }
 }
 
@@ -1940,7 +1940,7 @@ void IRRout::record_company_window_IRR(ofstream &IRROut, int companyIndex, strin
     record_BH_IRR(companyIndex, setMA, windowRankList);
     rank_tradition_GNQTS_window(companyName, windowRankList);
     for (int i = 0; i < windowRankList.size(); i++) {
-        IRROut << windowRankList[i].window_ + "," << windowRankList[i].GNQTSIRR_ * 100.0 << "," << windowRankList[i].traditionIRR_ * 100.0 << endl;
+        IRROut << windowRankList[i].window_ + "," + set_precision(windowRankList[i].GNQTSIRR_ * 100.0) + "," + set_precision(windowRankList[i].traditionIRR_ * 100.0) << endl;
     }
 }
 
