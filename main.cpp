@@ -2036,7 +2036,7 @@ int main(int argc, const char *argv[]) {
         }
     }
     time_point end = steady_clock::now();
-    cout << "time: " << duration_cast<seconds>(end - begin).count() << " s" << endl;
+    cout << "time: " << duration_cast<milliseconds>(end - begin).count() / 1000.0 << " s" << endl;
     return 0;
 }
 
