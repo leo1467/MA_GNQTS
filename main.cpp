@@ -20,7 +20,7 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 0;
+int _mode = 10;
 string _setCompany = "AAPL";
 string _setWindow = "M2M";
 int _MAUse = 0;
@@ -1593,7 +1593,7 @@ void CompanyInfo::output_MA() {
                 }
                 else {
                     for (int i = 0, dateRow = MA - 1; i < MAtable_[MA].size(); i++, dateRow++) {
-                        out << date_[dateRow] + "," << MAtable_[MA][i] << endl;
+                        out << date_[dateRow] + "," + set_precision(MAtable_[MA][i]) << endl;
                     }
                 }
                 out.close();
@@ -2027,10 +2027,10 @@ int main(int argc, const char *argv[]) {
                 break;
             }
             case 10: {
-                    //company.output_MA();
-                    //company.train("debug", "2020-01-02", "2021-06-30");
-                company.train("2012-01-03", "2012-12-31");
-                    //company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
+                company.output_MA();
+                    //                company.train("debug", "2020-01-02", "2021-06-30");
+                    //                company.train("2012-01-03", "2012-12-31");
+                    //                company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
                 break;
             }
         }
