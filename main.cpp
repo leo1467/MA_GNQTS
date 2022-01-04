@@ -20,33 +20,34 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 10;
+int _mode = 0;
 string _setCompany = "AAPL";
 string _setWindow = "M2M";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
-int _algoUse = 3;
+int _algoUse = 2;
 string _algo[] = {"QTS", "GQTS", "GNQTS", "KNQTS"};
+
+double _delta = 0.00012;
+int _expNumber = 50;
+int _generationNumber = 10000;
 double _multiplyUp = 1.01;
 double _multiplyDown = 0.99;
+int _testDeltaLoop = 1;  //normal is 1
+double _testDeltaGap = 0.00001;
 
-int _techIndex = 0;
-
-path _pricePath = "price";  //若要讀取到小數2位的用price.2，沒有的話用price
-int _closeCol = 4;
 string _testStartYear = "2012";
 string _testEndYear = "2021";
 double _testYearLength = stod(_testEndYear) - stod(_testStartYear);
 vector<string> _slidingWindows{"A2A", "YYY2YYY", "YYY2YY", "YYY2YH", "YYY2Y", "YYY2H", "YYY2Q", "YYY2M", "YY2YY", "YY2YH", "YY2Y", "YY2H", "YY2Q", "YY2M", "YH2YH", "YH2Y", "YH2H", "YH2Q", "YH2M", "Y2Y", "Y2H", "Y2Q", "Y2M", "H2H", "H2Q", "H2M", "Q2Q", "Q2M", "M2M", "H#", "Q#", "M#", "20D20", "20D15", "20D10", "20D5", "15D15", "15D10", "15D5", "10D10", "10D5", "5D5", "5D4", "5D3", "5D2", "4D3", "4D2", "3D2", "2D2", "4W4", "4W3", "4W2", "4W1", "3W3", "3W2", "3W1", "2W2", "2W1", "1W1"};
 vector<string> _slidingWindowsEX{"A2A", "36M36", "36M24", "36M18", "36M12", "36M6", "36M3", "36M1", "24M24", "24M18", "24M12", "24M6", "24M3", "24M1", "18M18", "18M12", "18M6", "18M3", "18M1", "12M12", "12M6", "12M3", "12M1", "6M6", "6M3", "6M1", "3M3", "3M1", "1M1", "6M", "3M", "1M", "20D20", "20D15", "20D10", "20D5", "15D15", "15D10", "15D5", "10D10", "10D5", "5D5", "5D4", "5D3", "5D2", "4D3", "4D2", "3D2", "2D2", "4W4", "4W3", "4W2", "4W1", "3W3", "3W2", "3W1", "2W2", "2W1", "1W1"};
 
-double _delta = 0.00125;
-int _expNumber = 50;
-int _generationNumber = 10000;
-
-int _outputDecimal2 = 0;  //產生小數2位的股價跟SMA
-
 string _outputPath = _MA[_MAUse] + "_result";
+path _pricePath = "price";  //若要讀取到小數2位的用price.2，沒有的話用price
+int _closeCol = 4;
+
+int _techIndex = 0;
+int _outputDecimal2 = 0;  //產生小數2位的股價跟SMA
 
 vector<vector<string>> read_data(path filePath) {
     ifstream infile(filePath);
@@ -1046,6 +1047,11 @@ void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
 
 void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table, string trainPath, int actualStartRow, int actualEndRow) {
     if (trainPath != "") {
+        if (_testDeltaLoop > 1) {
+            string folderName = _setWindow + "_" + to_string(_delta);
+            create_directories(folderName);
+            trainPath = folderName;
+        }
         trainPath += "/";
     }
     else {
@@ -1644,7 +1650,10 @@ void CompanyInfo::train(string targetWindow, string startDate, string endDate, b
         record = true;
         targetWindow = "all";
     }
-    MA_GNQTS runGNQTS(*this, table, targetWindow, startDate, endDate, debug, record);
+    for (int i = 0; i < _testDeltaLoop; i++) {
+        MA_GNQTS runGNQTS(*this, table, targetWindow, startDate, endDate, debug, record);
+        _delta -= _testDeltaGap;
+    }
 }
 
 void CompanyInfo::find_train_start_row(int trainPeriodLength, char delimiter) {
