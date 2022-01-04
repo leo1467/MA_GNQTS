@@ -26,7 +26,7 @@ string _setWindow = "M2M";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
 int _algoUse = 3;
-string _algo[] = {"QTS", "GQTS", "GNQTS", "GNQTS_multiply"};
+string _algo[] = {"QTS", "GQTS", "GNQTS", "KNQTS"};
 double _multiplyUp = 1.01;
 double _multiplyDown = 0.99;
 
@@ -274,7 +274,7 @@ public:
     void print_debug_particle(bool debug, int i, ofstream &out);
     void store_exp_gen(int expCnt, int generation);
     void start_gen(bool debug, int expCnt, int generation, ofstream &out);
-    void initial_GNQTS_multiply();
+    void initial_KNQTS();
     void start_exp(bool debug, int expCnt, ofstream &out);
     
     MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record);
@@ -928,6 +928,16 @@ void MA_GNQTS::print_debug_beta(bool debug, ofstream &out) {
                 localWorst_.print(out, debug);
                 break;
             }
+            case 3: {
+                out << "global best" << endl;
+                globalBest_.print(out, debug);
+                out << "local best" << endl;
+                localBest_.print(out, debug);
+                out << "local worst" << endl;
+                localWorst_.print(out, debug);
+                out << delta_ << endl;
+                break;
+            }
         }
         betaMtrix_.print(out, debug);
     }
@@ -1017,7 +1027,7 @@ void MA_GNQTS::start_gen(bool debug, int expCnt, int generation, ofstream &out) 
     print_debug_beta(debug, out);
 }
 
-void MA_GNQTS::initial_GNQTS_multiply() {
+void MA_GNQTS::initial_KNQTS() {
     delta_ = _delta;
     compareNew_ = 0;
     compareOld_ = 0;
@@ -1027,7 +1037,7 @@ void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
     print_debug_exp(debug, expCnt, out);
     globalBest_.initialize();
     betaMtrix_.initilaize();
-    initial_GNQTS_multiply();
+    initial_KNQTS();
     for (int generation = 0; generation < _generationNumber; generation++) {
         start_gen(debug, expCnt, generation, out);
     }
