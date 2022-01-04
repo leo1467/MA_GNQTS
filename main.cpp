@@ -126,8 +126,8 @@ public:
         string windowName__;
         string windowNameEx__;
         vector<int> interval__;
-        int firstTrainStartRow__{-1};
-        int firstTrainEndRow__{-1};
+        int firstTrainStartRow__ = -1;
+        int firstTrainEndRow__ = -1;
         CompanyInfo &company__;
         
         void find_train_interval();
@@ -166,8 +166,8 @@ public:
     int testEndRow_;
     int trainStartRow_;
     int trainEndRow_;
-    int longestTrainMonth_{0};
-    int longestTrainRow_{-1};
+    int longestTrainMonth_ = 0;
+    int longestTrainRow_ = -1;
     int windowNumber_;
     vector<vector<double>> MAtable_;
     string trainFilePath_;
@@ -210,16 +210,16 @@ public:
         vector<int> buy2_bi__;
         vector<int> sell1_bi__;
         vector<int> sell2_bi__;
-        int buy1_dec__{0};
-        int buy2_dec__{0};
-        int sell1_dec__{0};
-        int sell2_dec__{0};
-        int buyNum__{0};
-        int sellNum__{0};
+        int buy1_dec__ = 0;
+        int buy2_dec__ = 0;
+        int sell1_dec__ = 0;
+        int sell2_dec__ = 0;
+        int buyNum__ = 0;
+        int sellNum__ = 0;
         vector<string> tradeRecord__;
-        double remain__{TOTAL_CP_LV};
-        double RoR__{0};
-        bool isRecordOn__{false};
+        double remain__ = TOTAL_CP_LV;
+        double RoR__ = 0;
+        bool isRecordOn__ = false;
         int gen__;
         int exp__;
         int bestCnt__;
@@ -246,8 +246,8 @@ public:
     Particle localWorst_;
     Particle globalBest_;
     Particle best_;
-    int actualStartRow_{-1};
-    int actualEndRow_{-1};
+    int actualStartRow_ = -1;
+    int actualEndRow_ = -1;
     CompanyInfo::MATable &table_;
     CompanyInfo &company_;
     double delta_ = _delta;
@@ -274,7 +274,7 @@ public:
     void print_debug_particle(bool debug, int i, ofstream &out);
     void store_exp_gen(int expCnt, int generation);
     void start_gen(bool debug, int expCnt, int generation, ofstream &out);
-    void initial_KNQTS();
+    void initialize_KNQTS();
     void start_exp(bool debug, int expCnt, ofstream &out);
     
     MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, string startDate, string endDate, bool debug, bool record);
@@ -1027,7 +1027,7 @@ void MA_GNQTS::start_gen(bool debug, int expCnt, int generation, ofstream &out) 
     print_debug_beta(debug, out);
 }
 
-void MA_GNQTS::initial_KNQTS() {
+void MA_GNQTS::initialize_KNQTS() {
     delta_ = _delta;
     compareNew_ = 0;
     compareOld_ = 0;
@@ -1037,7 +1037,7 @@ void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
     print_debug_exp(debug, expCnt, out);
     globalBest_.initialize();
     betaMtrix_.initilaize();
-    initial_KNQTS();
+    initialize_KNQTS();
     for (int generation = 0; generation < _generationNumber; generation++) {
         start_gen(debug, expCnt, generation, out);
     }
@@ -1207,8 +1207,8 @@ void CompanyInfo::TrainWindow::find_first_train_start_row(int trainPeriodLength,
 void CompanyInfo::TrainWindow::find_M_train(vector<string> trainType, char delimiter) {
     vector<int> startRow, endRow;
     int trainLength = stoi(trainType[0]);
-    int intervalNum{-1};
-    int testLength{-1};
+    int intervalNum = -1;
+    int testLength = -1;
         //=======================================找出第一個startRow
     if (trainType.size() == 2) {
         find_first_train_start_row(trainLength, delimiter);
@@ -1272,8 +1272,8 @@ void CompanyInfo::TrainWindow::find_W_train(vector<string> trainType, char delim
     int trainLength{stoi(trainType[0])};
     int testLength{stoi(trainType[1])};
     find_first_train_start_row(trainLength, delimiter);
-    int smallWeekDay{-1};
-    int bigWeekDay{-1};
+    int smallWeekDay = -1;
+    int bigWeekDay = -1;
     startRow.push_back(firstTrainStartRow__);
     for (int i = firstTrainStartRow__, j = 0; i < company__.testEndRow_ - trainLength * 5; i++) {
         smallWeekDay = cal_weekday(company__.date_[i]);
@@ -1326,7 +1326,7 @@ bool CompanyInfo::TrainWindow::is_week_changed(CompanyInfo &comapny, int bigWeek
 void CompanyInfo::TrainWindow::find_D_train(vector<string> trainType, char delimiter) {
     vector<int> startRow, endRow;
     int trainLength{stoi(trainType[0])};
-    int testLength{-1};
+    int testLength = -1;
         //=======================================找出訓練期開始Row
     find_first_train_start_row(trainLength, delimiter);
     testLength = stoi(trainType[1]);
@@ -1449,8 +1449,8 @@ void CompanyInfo::TestWindow::find_D_test(int testLength) {
 
 void CompanyInfo::TestWindow::find_W_test(int testLength) {
     vector<int> startRow, endRow;
-    int smallWeekDay{-1};
-    int bigWeekDay{-1};
+    int smallWeekDay = -1;
+    int bigWeekDay = -1;
     startRow.push_back(company__.testStartRow_);
     for (int i = company__.testStartRow_, j = 0; i < company__.testEndRow_; i++) {
         smallWeekDay = TrainWindow::cal_weekday(company__.date_[i]);
@@ -1750,8 +1750,8 @@ void CompanyInfo::print_test(string targetWindow) {
 
 void CompanyInfo::instant_trade(string startDate, string endDate, int buy1, int buy2, int sell1, int sell2) {
     MATable table(*this);
-    int startRow{-1};
-    int endRow{-1};
+    int startRow = -1;
+    int endRow = -1;
     for (int i = 0; i < table.days__; i++) {
         if (startDate == table.date__[i]) {
             startRow = i;
@@ -1951,7 +1951,7 @@ void IRRout::record_company_window_IRR(ofstream &IRROut, int companyIndex, strin
 }
 
 vector<string> IRRout::removeA2ASort() {
-    vector<string> windowSort(slidingWindows_.begin(), slidingWindows_.end());
+    vector<string> windowSort = slidingWindows_;
     auto A2AIter = find(windowSort.begin(), windowSort.end(), "A2A");
     windowSort.erase(A2AIter);
     windowSort.push_back("B&H");
@@ -2037,7 +2037,7 @@ int main(int argc, const char *argv[]) {
                 break;
             }
             case 10: {
-                company.output_MA();
+                    //                company.output_MA();
                     //                company.train("debug", "2020-01-02", "2021-06-30");
                     //                company.train("2012-01-03", "2012-12-31");
                     //                company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
