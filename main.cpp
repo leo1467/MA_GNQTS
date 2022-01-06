@@ -33,7 +33,7 @@ int _expNumber = 50;
 int _generationNumber = 10000;
 double _multiplyUp = 1.01;
 double _multiplyDown = 0.99;
-int _testDeltaLoop = 1;  //normal is 1
+int _testDeltaLoop = 1;  //normal is 0
 double _testDeltaGap = 0.00001;
 
 string _testStartYear = "2012";
@@ -1047,7 +1047,7 @@ void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
 
 void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table, string trainPath, int actualStartRow, int actualEndRow) {
     if (trainPath != "") {
-        if (_testDeltaLoop > 1) {
+        if (_testDeltaLoop > 0) {
             string folderName = _setWindow + "_" + to_string(_delta);
             create_directories(folderName);
             trainPath = folderName;
@@ -1650,9 +1650,14 @@ void CompanyInfo::train(string targetWindow, string startDate, string endDate, b
         record = true;
         targetWindow = "all";
     }
-    for (int i = 0; i < _testDeltaLoop; i++) {
+    if (_testDeltaLoop == 0) {
         MA_GNQTS runGNQTS(*this, table, targetWindow, startDate, endDate, debug, record);
-        _delta -= _testDeltaGap;
+    }
+    else {
+        for (int i = 0; i < _testDeltaLoop; i++) {
+            MA_GNQTS runGNQTS(*this, table, targetWindow, startDate, endDate, debug, record);
+            _delta -= _testDeltaGap;
+        }
     }
 }
 
