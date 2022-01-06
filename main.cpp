@@ -221,9 +221,9 @@ public:
         double remain__ = TOTAL_CP_LV;
         double RoR__ = 0;
         bool isRecordOn__ = false;
-        int gen__;
-        int exp__;
-        int bestCnt__;
+        int gen__ = 0;
+        int exp__ = 0;
+        int bestCnt__ = 0;
         
         void print(ofstream &out, bool debug);
         void initialize(double RoR = 0);
@@ -236,7 +236,8 @@ public:
         static bool check_sell_cross(int stockHold, double MAsell1PreDay, double MAsell2PreDay, double MAsell1Today, double MAsell2Today, int i, int endRow);
         void trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord = false);
         void print_trade_record(ofstream &out);
-        void print_train_data(CompanyInfo &company_, CompanyInfo::MATable &MAtable_, string trainPath, int actualStartRow_, int actualEndRow_);
+        string set_output_filePath(int actualEndRow, int actualStartRow, CompanyInfo &company, string &outputPath, CompanyInfo::MATable &table);
+        void print_train_test_data(CompanyInfo &company_, CompanyInfo::MATable &MAtable_, string trainPath, int actualStartRow_, int actualEndRow_);
         
         Particle(int buy1 = 0, int buy2 = 0, int sell1 = 0, int sell2 = 0, bool on = false);
     };
@@ -289,7 +290,6 @@ public:
     
     CompanyInfo::TestWindow set_window(string &actualWindow, string &targetWindow, int &windowIndex);
     void check_exception(vector<path> &eachTrainFilePath, CompanyInfo::TestWindow &window);
-    void print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window, string testFileOutputPath);
     void set_test_output_path(string &testFileOutputPath, string &trainFilePath, bool tradition);
     
     CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, bool tradition = false);
@@ -369,7 +369,7 @@ void Tradition::trainTradition(CompanyInfo::MATable &table, string targetWindow)
             }
             stable_sort(p_.begin(), p_.end(), [](const MA_GNQTS::Particle &a, const MA_GNQTS::Particle &b) { return a.RoR__ > b.RoR__; });
                 //                eachBestP_.push_back(p_[0]);
-            p_[0].print_train_data(company_, table, outputPath, startRow, endRow);
+            p_[0].print_train_test_data(company_, table, outputPath, startRow, endRow);
         }
     }
 }
@@ -397,35 +397,6 @@ void CalculateTest::check_exception(vector<path> &eachTrainFilePath, CompanyInfo
     }
 }
 
-void CalculateTest::print_test_data(int intervalIndex, MA_GNQTS::Particle &p, CompanyInfo::TestWindow &window, string testFileOutputPath) {
-    ofstream out;
-    string period = table_.date__[window.interval__[intervalIndex]] + "_" + table_.date__[window.interval__[intervalIndex + 1]];
-    out.open(testFileOutputPath + window.windowName__ + "/" + period + ".csv");
-    out << "algo," + _algo[_algoUse] << endl;
-    out << "delta," + set_precision(_delta) << endl;
-    out << "exp," << _expNumber << endl;
-    out << "gen," << _generationNumber << endl;
-    out << "p amount," << PARTICAL_AMOUNT << endl;
-    out << endl;
-    out << "initial capital," + set_precision(TOTAL_CP_LV) << endl;
-    out << "final capital," + set_precision(p.remain__) << endl;
-    out << "final return," + set_precision(p.remain__ - TOTAL_CP_LV) << endl;
-    out << endl;
-    out << "buy1," << p.buy1_dec__ << endl;
-    out << "buy2," << p.buy2_dec__ << endl;
-    out << "sell1," << p.sell1_dec__ << endl;
-    out << "sell2," << p.sell2_dec__ << endl;
-    out << "trade," << p.sellNum__ << endl;
-    out << "return rate," + set_precision(p.RoR__) + "%" << endl;
-    out << endl;
-    out << "best exp," << endl;
-    out << "best gen," << endl;
-    out << "best cnt," << endl;
-    out << endl;
-    p.print_trade_record(out);
-    out.close();
-}
-
 void CalculateTest::set_test_output_path(string &testFileOutputPath, string &trainFilePath, bool tradition) {
     trainFilePath = company_.trainFilePath_;
     testFileOutputPath = company_.testFilePath_;
@@ -445,6 +416,7 @@ CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, 
         if (actualWindow != "A2A") {
             CompanyInfo::TestWindow window = set_window(actualWindow, targetWindow, windowIndex);
             vector<path> eachTrainFilePath = get_path(trainFilePath + window.windowName__);
+            testFileOutputPath += window.windowName__;
             for (int intervalIndex = 0, trainFileIndex = 0; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
                 check_exception(eachTrainFilePath, window);
                 vector<vector<string>> thisTrainFile = read_data(eachTrainFilePath[trainFileIndex]);
@@ -453,9 +425,7 @@ CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, 
                 p_.buy2_dec__ = stoi(thisTrainFile[11][1]);
                 p_.sell1_dec__ = stoi(thisTrainFile[12][1]);
                 p_.sell2_dec__ = stoi(thisTrainFile[13][1]);
-                p_.isRecordOn__ = true;
-                p_.trade(window.interval__[intervalIndex], window.interval__[intervalIndex + 1], table_);
-                print_test_data(intervalIndex, p_, window, testFileOutputPath);
+                p_.print_train_test_data(company_, table_, testFileOutputPath, window.interval__[intervalIndex], window.interval__[intervalIndex + 1]);
             }
         }
     }
@@ -1045,22 +1015,30 @@ void MA_GNQTS::start_exp(bool debug, int expCnt, ofstream &out) {
     update_best();
 }
 
-void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MATable &table, string trainPath, int actualStartRow, int actualEndRow) {
-    if (trainPath != "") {
+string MA_GNQTS::Particle::set_output_filePath(int actualEndRow, int actualStartRow, CompanyInfo &company, string &outputPath, CompanyInfo::MATable &table) {
+    if (outputPath != "") {
         if (_testDeltaLoop > 0) {
             string folderName = _setWindow + "_" + to_string(_delta);
             create_directories(folderName);
-            trainPath = folderName;
+            outputPath = folderName;
         }
-        trainPath += "/";
+        outputPath += "/";
     }
     else {
         string delta = set_precision(_delta);
         delta.erase(delta.find_last_not_of('0') + 1, std::string::npos);
-        trainPath = company.MAType_ + "_" + company.companyName_ + "_" + _algo[_algoUse] + "_" + delta + "_";
+        outputPath = company.MAType_ + "_" + company.companyName_ + "_" + _algo[_algoUse] + "_" + delta + "_";
     }
+    return outputPath + table.date__[actualStartRow] + "_" + table.date__[actualEndRow] + ".csv";
+}
+
+void MA_GNQTS::Particle::print_train_test_data(CompanyInfo &company, CompanyInfo::MATable &table, string outputPath, int actualStartRow, int actualEndRow) {
+    string filePath = set_output_filePath(actualEndRow, actualStartRow, company, outputPath, table);
+    isRecordOn__ = true;
+    remain__ = TOTAL_CP_LV;
+    trade(actualStartRow, actualEndRow, table);
     ofstream out;
-    out.open(trainPath + table.date__[actualStartRow] + "_" + table.date__[actualEndRow] + ".csv");
+    out.open(filePath);
     out << "algo," + _algo[_algoUse] << endl;
     out << "delta," + set_precision(_delta) << endl;
     out << "exp," << _expNumber << endl;
@@ -1082,9 +1060,6 @@ void MA_GNQTS::Particle::print_train_data(CompanyInfo &company, CompanyInfo::MAT
     out << "best gen," << gen__ << endl;
     out << "best cnt," << bestCnt__ << endl;
     out << endl;
-    isRecordOn__ = true;
-    remain__ = TOTAL_CP_LV;
-    trade(actualStartRow, actualEndRow, table);
     print_trade_record(out);
     out.close();
 }
@@ -1103,7 +1078,7 @@ MA_GNQTS::MA_GNQTS(CompanyInfo &company, CompanyInfo::MATable &table, string tar
                 start_exp(debug, expCnt, out);
             }
             out.close();
-            best_.print_train_data(company_, table_, company_.trainFilePath_ + window.windowName__, actualStartRow_, actualEndRow_);
+            best_.print_train_test_data(company_, table_, company_.trainFilePath_ + window.windowName__, actualStartRow_, actualEndRow_);
             cout << best_.RoR__ << "%" << endl;
         }
         cout << "==========" << endl;
