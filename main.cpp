@@ -20,7 +20,7 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 0;
+int _mode = 10;
 string _setCompany = "AAPL";
 string _setWindow = "M2M";
 int _MAUse = 0;
@@ -53,10 +53,10 @@ vector<vector<string>> read_data(path filePath) {
     ifstream infile(filePath);
     vector<vector<string>> data;
     if (!infile) {
-        cout << filePath.string() + " not found" << endl;
+        cout << filePath << " not found" << endl;
         exit(1);
     }
-        //    cout << "reading " + filePath.filename().string() << endl;
+        //    cout << "reading " << filePath.filename() << endl;
     string row;
     string cell;
     vector<string> oneRow;
@@ -349,7 +349,7 @@ CompanyInfo::TrainWindow Tradition::set_window(string &targetWindow, int &window
 }
 
 void Tradition::trainTradition(CompanyInfo::MATable &table, string targetWindow) {
-    cout << "train " + company_.companyName_ + " tradition" << endl;
+    cout << "train " << company_.companyName_ << " tradition" << endl;
     int startRow = 0;
     int endRow = 0;
     string outputPath = "";
@@ -392,7 +392,7 @@ CompanyInfo::TestWindow CalculateTest::set_window(string &actualWindow, string &
 
 void CalculateTest::check_exception(vector<path> &eachTrainFilePath, CompanyInfo::TestWindow &window) {
     if (eachTrainFilePath.size() != window.interval__.size() / 2) {
-        cout << window.windowName__ + " test interval number is not equal to train fle number" << endl;
+        cout << window.windowName__ << " test interval number is not equal to train fle number" << endl;
         exit(1);
     }
 }
@@ -404,7 +404,7 @@ void CalculateTest::set_test_output_path(string &testFileOutputPath, string &tra
         trainFilePath = company_.trainTraditionFilePath_;
         testFileOutputPath = company_.testTraditionFilePath_;
     }
-    cout << "test " + company_.companyName_ << endl;
+    cout << "test " << company_.companyName_ << endl;
 }
 
 CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, bool tradition) : company_(company), table_(table) {
@@ -594,7 +594,7 @@ void MA_GNQTS::Particle::print(ofstream &out, bool debug) {
         out << ",";
         for_each(sell2_bi__.begin(), sell2_bi__.end(), [&out](auto i) { out << i << ","; });
         out << ",";
-        out << set_precision(RoR__) + "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
+        out << set_precision(RoR__) << "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
     }
     else {
         for_each(buy1_bi__.begin(), buy1_bi__.end(), [](auto i) { cout << i << ","; });
@@ -605,7 +605,7 @@ void MA_GNQTS::Particle::print(ofstream &out, bool debug) {
         cout << "|";
         for_each(sell2_bi__.begin(), sell2_bi__.end(), [](auto i) { cout << i << ","; });
         cout << "|";
-        cout << set_precision(RoR__) + "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
+        cout << set_precision(RoR__) << "%," << buy1_dec__ << "," << buy2_dec__ << "," << sell1_dec__ << "," << sell2_dec__ << endl;
     }
 }
 
@@ -822,24 +822,24 @@ void MA_GNQTS::BetaMatrix::initilaize() {
 void MA_GNQTS::BetaMatrix::print(ofstream &out, bool debug) {
     if (debug) {
         out << "beta matrix" << endl;
-        for_each(buy1__.begin(), buy1__.end(), [&out](auto i) { out << set_precision(i) + ","; });
+        for_each(buy1__.begin(), buy1__.end(), [&out](auto i) { out << set_precision(i) << ","; });
         out << ",";
-        for_each(buy2__.begin(), buy2__.end(), [&out](auto i) { out << set_precision(i) + ","; });
+        for_each(buy2__.begin(), buy2__.end(), [&out](auto i) { out << set_precision(i) << ","; });
         out << ",";
-        for_each(sell1__.begin(), sell1__.end(), [&out](auto i) { out << set_precision(i) + ","; });
+        for_each(sell1__.begin(), sell1__.end(), [&out](auto i) { out << set_precision(i) << ","; });
         out << ",";
-        for_each(sell2__.begin(), sell2__.end(), [&out](auto i) { out << set_precision(i) + ","; });
+        for_each(sell2__.begin(), sell2__.end(), [&out](auto i) { out << set_precision(i) << ","; });
         out << endl;
     }
     else {
         cout << "beta matrix" << endl;
-        for_each(buy1__.begin(), buy1__.end(), [](auto i) { cout << set_precision(i) + ","; });
+        for_each(buy1__.begin(), buy1__.end(), [](auto i) { cout << set_precision(i) << ","; });
         cout << "|";
-        for_each(buy2__.begin(), buy2__.end(), [](auto i) { cout << set_precision(i) + ","; });
+        for_each(buy2__.begin(), buy2__.end(), [](auto i) { cout << set_precision(i) << ","; });
         cout << "|";
-        for_each(sell1__.begin(), sell1__.end(), [](auto i) { cout << set_precision(i) + ","; });
+        for_each(sell1__.begin(), sell1__.end(), [](auto i) { cout << set_precision(i) << ","; });
         cout << "|";
-        for_each(sell2__.begin(), sell2__.end(), [](auto i) { cout << set_precision(i) + ","; });
+        for_each(sell2__.begin(), sell2__.end(), [](auto i) { cout << set_precision(i) << ","; });
         cout << endl;
     }
 }
@@ -1039,22 +1039,22 @@ void MA_GNQTS::Particle::print_train_test_data(CompanyInfo &company, CompanyInfo
     trade(actualStartRow, actualEndRow, table);
     ofstream out;
     out.open(filePath);
-    out << "algo," + _algo[_algoUse] << endl;
-    out << "delta," + set_precision(_delta) << endl;
+    out << "algo," << _algo[_algoUse] << endl;
+    out << "delta," << set_precision(_delta) << endl;
     out << "exp," << _expNumber << endl;
     out << "gen," << _generationNumber << endl;
     out << "p amount," << PARTICAL_AMOUNT << endl;
     out << endl;
-    out << "initial capital," + set_precision(TOTAL_CP_LV) << endl;
-    out << "final capital," + set_precision(remain__) << endl;
-    out << "final return," + set_precision(remain__ - TOTAL_CP_LV) << endl;
+    out << "initial capital," << set_precision(TOTAL_CP_LV) << endl;
+    out << "final capital," << set_precision(remain__) << endl;
+    out << "final return," << set_precision(remain__ - TOTAL_CP_LV) << endl;
     out << endl;
     out << "buy1," << buy1_dec__ << endl;
     out << "buy2," << buy2_dec__ << endl;
     out << "sell1," << sell1_dec__ << endl;
     out << "sell2," << sell2_dec__ << endl;
     out << "trade," << sellNum__ << endl;
-    out << "return rate," + set_precision(RoR__) + "%" << endl;
+    out << "return rate," << set_precision(RoR__) << "%" << endl;
     out << endl;
     out << "best exp," << exp__ << endl;
     out << "best gen," << gen__ << endl;
@@ -1111,7 +1111,7 @@ void CompanyInfo::MATable::create_MAtable(CompanyInfo &company) {
     for (int i = 0; i < MAFilePath.size(); i++) {
         vector<vector<string>> MAFile = read_data(MAFilePath[i]);
         if (int(MAFile.size()) - days__ < 0) {
-            cout << company.companyName_ + " MA file not old enougth" << endl;
+            cout << company.companyName_ << " MA file not old enougth" << endl;
             exit(1);
         }
         for (int j = 0, k = int(MAFile.size()) - days__; k < MAFile.size(); j++, k++) {
@@ -1180,7 +1180,7 @@ void CompanyInfo::TrainWindow::find_first_train_start_row(int trainPeriodLength,
         }
     }
     if (firstTrainStartRow__ == -1) {
-        cout << windowName__ + " can not find trainStartRow " << trainPeriodLength << endl;
+        cout << windowName__ << " can not find trainStartRow " << trainPeriodLength << endl;
         exit(1);
     }
 }
@@ -1350,9 +1350,9 @@ void CompanyInfo::TrainWindow::check_startRowSize_endRowSize(int startRowSize, i
 }
 
 void CompanyInfo::TrainWindow::print_train() {
-    cout << "train " + windowName__ + "=" + windowNameEx__ << endl;
+    cout << "train " << windowName__ << "=" << windowNameEx__ << endl;
     for (auto it = interval__.begin(); it != interval__.end(); it++) {
-        cout << company__.date_[*it + company__.longestTrainRow_] + "~" + company__.date_[*(++it) + company__.longestTrainRow_] << endl;
+        cout << company__.date_[*it + company__.longestTrainRow_] << "~" << company__.date_[*(++it) + company__.longestTrainRow_] << endl;
     }
     cout << "==========" << endl;
 }
@@ -1467,9 +1467,9 @@ void CompanyInfo::TestWindow::find_W_test(int testLength) {
 }
 
 void CompanyInfo::TestWindow::print_test() {
-    cout << windowName__ + "=" + windowNameEx__ << endl;
+    cout << windowName__ << "=" << windowNameEx__ << endl;
     for (auto it = interval__.begin(); it != interval__.end(); it++) {
-        cout << company__.date_[*it + company__.longestTrainRow_] + "~" + company__.date_[*(++it) + company__.longestTrainRow_] << endl;
+        cout << company__.date_[*it + company__.longestTrainRow_] << "~" << company__.date_[*(++it) + company__.longestTrainRow_] << endl;
     }
     cout << "==========" << endl;
 }
@@ -1520,7 +1520,7 @@ void CompanyInfo::store_date_price(path priceFilePath) {
         out.open("price.2/" + companyName_ + ".csv");
         out << endl;
         for (int i = 0; i < totalDays_; i++) {
-            out << date_[i] + ",,,,";
+            out << date_[i] << ",,,,";
             out << fixed << setprecision(2) << price_[i] << endl;
         }
         out.close();
@@ -1530,7 +1530,7 @@ void CompanyInfo::store_date_price(path priceFilePath) {
 }
 
 void CompanyInfo::store_MA_to_vector() {
-    cout << "calculating " << companyName_ + " " + MAType_ << endl;
+    cout << "calculating " << companyName_ << " " << MAType_ << endl;
     vector<double> tmp;
     MAtable_.push_back(tmp);
     switch (MAType_[0]) {
@@ -1557,7 +1557,7 @@ void CompanyInfo::store_MA_to_vector() {
 
 void CompanyInfo::output_MA() {
     store_MA_to_vector();
-    cout << "saving " << companyName_ + " " + MAType_ << endl;
+    cout << "saving " << companyName_ << " " << MAType_ << endl;
     switch (MAType_[0]) {
         case 'S':
             for (int MA = 1; MA < 257; MA++) {
@@ -1579,12 +1579,12 @@ void CompanyInfo::output_MA() {
                 }
                 if (_outputDecimal2 == 1) {
                     for (int i = 0, dateRow = MA - 1; i < MAtable_[MA].size(); i++, dateRow++) {
-                        out << fixed << setprecision(2) << date_[dateRow] + "," << MAtable_[MA][i] << endl;
+                        out << fixed << setprecision(2) << date_[dateRow] << "," << MAtable_[MA][i] << endl;
                     }
                 }
                 else {
                     for (int i = 0, dateRow = MA - 1; i < MAtable_[MA].size(); i++, dateRow++) {
-                        out << date_[dateRow] + "," + set_precision(MAtable_[MA][i]) << endl;
+                        out << date_[dateRow] << "," << set_precision(MAtable_[MA][i]) << endl;
                     }
                 }
                 out.close();
@@ -1655,7 +1655,7 @@ void CompanyInfo::find_train_start_row(int trainPeriodLength, char delimiter) {
         trainEndRow_ = testStartRow_ - 1;
     }
     if (trainStartRow_ == -1) {
-        cout << companyName_ + " can not find trainStartRow " << trainPeriodLength << endl;
+        cout << companyName_ << " can not find trainStartRow " << trainPeriodLength << endl;
         exit(1);
     }
 }
@@ -1691,15 +1691,15 @@ void CompanyInfo::output_MATable() {
     MATable table(*this);
     ofstream out;
     out.open(companyName_ + "_" + MAType_ + "_Table.csv");
-    out << MAType_ + ",";
+    out << MAType_ << ",";
     for (int i = 1; i < 257; i++) {
         out << i << ",";
     }
     out << endl;
     for (int i = 0; i < table.days__; i++) {
-        out << table.date__[i] + ",";
+        out << table.date__[i] << ",";
         for (int j = 1; j < 257; j++) {
-            out << set_precision(table.MAtable__[i][j]) + ",";
+            out << set_precision(table.MAtable__[i][j]) << ",";
         }
         out << endl;
     }
@@ -1766,7 +1766,7 @@ void CompanyInfo::instant_trade(string startDate, string endDate, int buy1, int 
     ofstream out;
     out.open(companyName_ + "_instantTrade_" + startDate + "_" + endDate + "_" + to_string(buy1) + "_" + to_string(buy2) + "_" + to_string(sell1) + "_" + to_string(sell2) + ".csv");
     out << "company,startDate,endDate,buy1,buy2,sell1,sell2" << endl;
-    out << companyName_ + "," + startDate + "," + endDate + "," + to_string(buy1) + "," + to_string(buy2) + "," + to_string(sell1) + "," + to_string(sell2) + "\r" << endl;
+    out << companyName_ << "," << startDate << "," << endDate << "," << buy1 << "," << buy2 << "," << sell1 << "," << sell2 << "\r" << endl;
     p.print_trade_record(out);
     out.close();
 }
@@ -1828,7 +1828,7 @@ void IRRout::compute_record_window_RoR(vector<path> &strategies, vector<path>::i
     string strategyName = strategyPath->stem().string();
     vector<vector<string>> testFile = read_data(*strategyPath);
     double RoR = stod(testFile[15][1]);
-    RoROut << strategyName + "," + testFile[10][1] + "," + testFile[11][1] + "," + testFile[12][1] + "," + testFile[13][1] + "," + testFile[15][1] << endl;
+    RoROut << strategyName << "," << testFile[10][1] << "," << testFile[11][1] << "," << testFile[12][1] << "," << testFile[13][1] << "," << testFile[15][1] << endl;
     if (strategyPath == strategies.begin()) {
         totalRate[i] = RoR / 100.0 + 1.0;
     }
@@ -1841,8 +1841,8 @@ void IRRout::record_window_IRR(string &companyName, ofstream &testRoROut, ofstre
     string windowName = slidingWindows_[windowIndex];
     if (windowName != "A2A") {
         cout << windowName << endl;
-        testRoROut << ",================" + windowName + "================" << endl;
-        traditionRoROut << ",================" + windowName + "================" << endl;
+        testRoROut << ",================" << windowName << "================" << endl;
+        traditionRoROut << ",================" << windowName << "================" << endl;
         double totalRate[] = {0, 0};
         vector<path> GNQTSstrategies = get_path(outputPath_ + "/" + companyName + "/test/" + windowName);
         for (auto strategyPath = GNQTSstrategies.begin(); strategyPath != GNQTSstrategies.end(); strategyPath++) {
@@ -1862,8 +1862,8 @@ void IRRout::record_window_IRR(string &companyName, ofstream &testRoROut, ofstre
         totalRate[0]--;
         totalRate[1]--;
         windowRankList.push_back(tmp_);
-        testRoROut << ",,,,,," + windowName + "," + set_precision(totalRate[0]) + "," + set_precision(tmp_.GNQTSIRR_) << endl;
-        traditionRoROut << ",,,,,," + windowName + "," + set_precision(totalRate[1]) + "," + set_precision(tmp_.traditionIRR_) << endl;
+        testRoROut << ",,,,,," << windowName << "," << set_precision(totalRate[0]) << "," << set_precision(tmp_.GNQTSIRR_) << endl;
+        traditionRoROut << ",,,,,," << windowName << "," << set_precision(totalRate[1]) << "," << set_precision(tmp_.traditionIRR_) << endl;
     }
 }
 
@@ -1922,8 +1922,8 @@ void IRRout::rank_tradition_GNQTS_window(string &companyName, vector<IRRout::Win
 void IRRout::record_company_window_IRR(ofstream &IRROut, int companyIndex, string &setMA) {
     vector<WindowIRR> windowRankList;
     string companyName = companyPricePath_[companyIndex].stem().string();
-    cout << "=====" + companyName + "=====" << endl;
-    IRROut << "=====" + companyName + "=====,GNQTS,Tradition" << endl;
+    cout << "=====" << companyName << "=====" << endl;
+    IRROut << "=====" << companyName << "=====,GNQTS,Tradition" << endl;
     ofstream GNQTSRoROut, traditionRoROut;
     GNQTSRoROut.open(outputPath_ + "/" + companyName + "/" + companyName + "_testRoR.csv");  //輸出一間公司所有視窗的每個區間的策略及報酬率
     traditionRoROut.open(outputPath_ + "/" + companyName + "/" + companyName + "_traditionTestRoR.csv");
@@ -1935,7 +1935,7 @@ void IRRout::record_company_window_IRR(ofstream &IRROut, int companyIndex, strin
     record_BH_IRR(companyIndex, setMA, windowRankList);
     rank_tradition_GNQTS_window(companyName, windowRankList);
     for (int i = 0; i < windowRankList.size(); i++) {
-        IRROut << windowRankList[i].window_ + "," + set_precision(windowRankList[i].GNQTSIRR_ * 100.0) + "," + set_precision(windowRankList[i].traditionIRR_ * 100.0) << endl;
+        IRROut << windowRankList[i].window_ << "," << set_precision(windowRankList[i].GNQTSIRR_ * 100.0) << "," << set_precision(windowRankList[i].traditionIRR_ * 100.0) << endl;
     }
 }
 
@@ -1955,11 +1955,11 @@ void IRRout::output_window_rank() {
     rankOut << "GNQTS window rank" << endl;
     rankOut << ",";
     for (auto &windowName : windowSort) {
-        rankOut << windowName + ",";
+        rankOut << windowName << ",";
     }
     rankOut << endl;
     for (auto &i : companyWindowRank_) {
-        rankOut << i.companyName_ + ",";
+        rankOut << i.companyName_ << ",";
         for (auto &j : i.GNQTSWindowRank_) {
             rankOut << j << ",";
         }
@@ -1967,7 +1967,7 @@ void IRRout::output_window_rank() {
     }
     rankOut << "tradition window rank" << endl;
     for (auto &i : companyWindowRank_) {
-        rankOut << i.companyName_ + ",";
+        rankOut << i.companyName_ << ",";
         for (auto &j : i.traditionWindowRank_) {
             rankOut << j << ",";
         }
