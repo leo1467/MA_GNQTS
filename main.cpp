@@ -119,6 +119,7 @@ public:
         double **MAtable__;
         
         void create_MAtable(CompanyInfo &company);
+        
         MATable(CompanyInfo &company);
         ~MATable();
     };
@@ -141,6 +142,7 @@ public:
         static vector<string> find_train_and_test_len(string window, char &delimiter);
         static void check_startRowSize_endRowSize(int startRowSize, int endRowSize);
         void print_train();
+        
         TrainWindow(string window, CompanyInfo &company);
     };
     class TestWindow {
@@ -155,6 +157,7 @@ public:
         void find_D_test(int testLength);
         void find_W_test(int testLength);
         void print_test();
+        
         TestWindow(string window, CompanyInfo &company);
     };
     string companyName_;
@@ -188,6 +191,7 @@ public:
     void find_longest_train_month_row();
     void output_MATable();
     void instant_trade(string startDate, string endDate, int buy1, int buy2, int sell1, int sell2);
+    
     CompanyInfo(path filePath, string MAUse);
     ~CompanyInfo();
 };
@@ -1108,7 +1112,11 @@ void CompanyInfo::MATable::create_MAtable(CompanyInfo &company) {
         cout << "no MA file" << endl;
         exit(1);
     }
+    cout << "reading MA files ";
     for (int i = 0; i < MAFilePath.size(); i++) {
+        if (i % 16 == 0) {
+            cout << ".";
+        }
         vector<vector<string>> MAFile = read_data(MAFilePath[i]);
         if (int(MAFile.size()) - days__ < 0) {
             cout << company.companyName_ << " MA file not old enougth" << endl;
@@ -1118,6 +1126,7 @@ void CompanyInfo::MATable::create_MAtable(CompanyInfo &company) {
             MAtable__[j][i + 1] = stod(MAFile[k][1]);
         }
     }
+    cout << endl;
 }
 
 CompanyInfo::MATable::MATable(CompanyInfo &company) {
@@ -1663,7 +1672,14 @@ void CompanyInfo::find_train_start_row(int trainPeriodLength, char delimiter) {
 void CompanyInfo::find_longest_train_month_row() {
     char delimiter;
     for (int i = 0; i < windowNumber_; i++) {
-        string trainMonth = TrainWindow::find_train_and_test_len(_slidingWindowsEX[i], delimiter)[0];
+        vector<string> trainTest = TrainWindow::find_train_and_test_len(_slidingWindowsEX[i], delimiter);
+        string trainMonth;
+        if (trainTest.size() == 1) {
+            trainMonth = "12";
+        }
+        else {
+            trainMonth = trainTest[0];
+        }
         if (delimiter == 'M' && stoi(trainMonth) > longestTrainMonth_) {
             longestTrainMonth_ = stoi(trainMonth);
         }
