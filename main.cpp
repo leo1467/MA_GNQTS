@@ -20,20 +20,20 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 10;
-string _setCompany = "AAPL";
-string _setWindow = "M2M";
+int _mode = 1;
+string _setCompany = "all";
+string _setWindow = "all";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
 int _algoUse = 2;
 string _algo[] = {"QTS", "GQTS", "GNQTS", "KNQTS"};
 
-double _delta = 0.00012;
+double _delta = 0.0012;
 int _expNumber = 50;
 int _generationNumber = 10000;
 double _multiplyUp = 1.01;
 double _multiplyDown = 0.99;
-int _testDeltaLoop = 1;  //normal is 0
+int _testDeltaLoop = 0;  //normal is 0
 double _testDeltaGap = 0.00001;
 
 string _testStartYear = "2012";
@@ -420,7 +420,6 @@ CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, 
         if (actualWindow != "A2A") {
             CompanyInfo::TestWindow window = set_window(actualWindow, targetWindow, windowIndex);
             vector<path> eachTrainFilePath = get_path(trainFilePath + window.windowName__);
-            testFileOutputPath += window.windowName__;
             for (int intervalIndex = 0, trainFileIndex = 0; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
                 check_exception(eachTrainFilePath, window);
                 vector<vector<string>> thisTrainFile = read_data(eachTrainFilePath[trainFileIndex]);
@@ -429,7 +428,7 @@ CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, 
                 p_.buy2_dec__ = stoi(thisTrainFile[11][1]);
                 p_.sell1_dec__ = stoi(thisTrainFile[12][1]);
                 p_.sell2_dec__ = stoi(thisTrainFile[13][1]);
-                p_.print_train_test_data(company_, table_, testFileOutputPath, window.interval__[intervalIndex], window.interval__[intervalIndex + 1]);
+                p_.print_train_test_data(company_, table_, testFileOutputPath + window.windowName__, window.interval__[intervalIndex], window.interval__[intervalIndex + 1]);
             }
         }
     }
@@ -2046,6 +2045,7 @@ int main(int argc, const char *argv[]) {
                     //                company.train("debug", "2020-01-02", "2021-06-30");
                     //                company.train("2012-01-03", "2012-12-31");
                     //                company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
+                company.train("2011-12-01", "2011-12-30");
                 break;
             }
         }
