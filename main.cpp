@@ -28,13 +28,14 @@ string _MA[] = {"SMA", "WMA", "EMA"};
 int _algoUse = 2;
 string _algo[] = {"QTS", "GQTS", "GNQTS", "KNQTS"};
 
-double _delta = 0.0012;
+double _delta = 0.00016;
 int _expNumber = 50;
 int _generationNumber = 10000;
 double _multiplyUp = 1.01;
 double _multiplyDown = 0.99;
 int _testDeltaLoop = 0;  //normal is 0
 double _testDeltaGap = 0.00001;
+int _compareMode = 1;
 
 string _testStartYear = "2012";
 string _testEndYear = "2021";
@@ -262,7 +263,7 @@ public:
     double multiplyUp_ = _multiplyUp;
     double multiplyDown_ = _multiplyDown;
     
-    void compare_bits(vector<int> &bestVector, vector<int> &worstVector, int bits);
+    void compare(vector<int> &bestVector, vector<int> &worstVector, int bits, int compareType);
     void compare_and_multiply();
     void update_global();
     void find_new_row(string startDate, string endDate);
@@ -747,19 +748,33 @@ void MA_GNQTS::QTS() {
     }
 }
 
-void MA_GNQTS::compare_bits(vector<int> &bestVector, vector<int> &worstVector, int bits) {
-    for (int i = 0; i < bits; i++) {
-        if (bestVector[i] != worstVector[i]) {
-            compareNew_++;
+void MA_GNQTS::compare(vector<int> &bestVector, vector<int> &worstVector, int bits, int compareType) {
+    switch (compareType) {
+        case 0: {
+            for (int i = 0; i < bits; i++) {
+                if (bestVector[i] != worstVector[i]) {
+                    compareNew_++;
+                }
+            }
+            break;
         }
+        case 1:{
+            compareNew_ += abs(localBest_.buy1_dec__ - localWorst_.buy1_dec__);
+            compareNew_ += abs(localBest_.buy2_dec__ - localWorst_.buy2_dec__);
+            compareNew_ += abs(localBest_.sell1_dec__ - localWorst_.sell1_dec__);
+            compareNew_ += abs(localBest_.sell2_dec__ - localWorst_.sell2_dec__);
+            break;
+        }
+        default:
+            break;
     }
 }
 
 void MA_GNQTS::compare_and_multiply() {
-    compare_bits(localBest_.buy1_bi__, localWorst_.buy1_bi__, BUY1_BITS);
-    compare_bits(localBest_.buy2_bi__, localWorst_.buy2_bi__, BUY2_BITS);
-    compare_bits(localBest_.sell1_bi__, localWorst_.sell1_bi__, SELL1_BITS);
-    compare_bits(localBest_.sell2_bi__, localWorst_.sell2_bi__, SELL2_BITS);
+    compare(localBest_.buy1_bi__, localWorst_.buy1_bi__, BUY1_BITS, _compareMode);
+    compare(localBest_.buy2_bi__, localWorst_.buy2_bi__, BUY2_BITS, _compareMode);
+    compare(localBest_.sell1_bi__, localWorst_.sell1_bi__, SELL1_BITS, _compareMode);
+    compare(localBest_.sell2_bi__, localWorst_.sell2_bi__, SELL2_BITS, _compareMode);
     if (compareNew_ > compareOld_) {
         delta_ *= multiplyUp_;
     }
