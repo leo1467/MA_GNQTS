@@ -331,7 +331,7 @@ public:
 
 class Tradition {
 public:
-    vector<vector<int>> traditionStrategy{{5, 10, 5, 10}, {5, 20, 5, 20}, {5, 60, 5, 60}, {10, 20, 10, 20}, {10, 60, 10, 60}, {20, 60, 20, 60}, {120, 240, 120, 240}};
+    vector<vector<int>> traditionStrategy_ = {{5, 10, 5, 10}, {5, 20, 5, 20}, {5, 60, 5, 60}, {10, 20, 10, 20}, {10, 60, 10, 60}, {20, 60, 20, 60}, {120, 240, 120, 240}};
     CompanyInfo &company_;
     vector<MA_GNQTS::Particle> p_;
     vector<MA_GNQTS::Particle> eachBestP_;
@@ -366,10 +366,10 @@ void Tradition::trainTradition(CompanyInfo::MATable &table, string targetWindow)
             outputPath = company_.trainTraditionFilePath_ + window.windowName__;
             for (int i = 0; i < p_.size(); i++) {
                 p_[i].initialize();
-                p_[i].buy1_dec__ = traditionStrategy[i][0];
-                p_[i].buy2_dec__ = traditionStrategy[i][1];
-                p_[i].sell1_dec__ = traditionStrategy[i][2];
-                p_[i].sell2_dec__ = traditionStrategy[i][3];
+                p_[i].buy1_dec__ = traditionStrategy_[i][0];
+                p_[i].buy2_dec__ = traditionStrategy_[i][1];
+                p_[i].sell1_dec__ = traditionStrategy_[i][2];
+                p_[i].sell2_dec__ = traditionStrategy_[i][3];
                 p_[i].trade(startRow, endRow, table);
             }
             stable_sort(p_.begin(), p_.end(), [](const MA_GNQTS::Particle &a, const MA_GNQTS::Particle &b) { return a.RoR__ > b.RoR__; });
@@ -379,7 +379,7 @@ void Tradition::trainTradition(CompanyInfo::MATable &table, string targetWindow)
     }
 }
 
-Tradition::Tradition(CompanyInfo &company, string targetWindow) : company_(company), p_(traditionStrategy.size()) {
+Tradition::Tradition(CompanyInfo &company, string targetWindow) : company_(company), p_(traditionStrategy_.size()) {
     CompanyInfo::MATable table(company_);
     trainTradition(table, targetWindow);
     CalculateTest runTest(company_, table, targetWindow, true);
