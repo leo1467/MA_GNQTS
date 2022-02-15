@@ -1126,17 +1126,22 @@ void CompanyInfo::MATable::create_MAtable(CompanyInfo &company) {
         cout << "no MA file" << endl;
         exit(1);
     }
-    cout << "reading MA files ";
+    cout << "reading MA files";
     for (int i = 0; i < MAFilePath.size(); i++) {
         if (i % 16 == 0) {
             cout << ".";
         }
         vector<vector<string>> MAFile = read_data(MAFilePath[i]);
-        if (int(MAFile.size()) - days__ < 0) {
+        int MAFileSize = MAFile.size();
+        if (i == 0 && MAFile[MAFileSize - 1][0] != date__[days__ - 1]) {
+            cout << "last date of price file and MA file are different, need to generate new MA file" << endl;
+            exit(1);
+        }
+        if (MAFileSize - days__ < 0) {
             cout << company.companyName_ << " MA file not old enougth" << endl;
             exit(1);
         }
-        for (int j = 0, k = int(MAFile.size()) - days__; k < MAFile.size(); j++, k++) {
+        for (int j = 0, k = MAFileSize - days__; k < MAFileSize; j++, k++) {
             MAtable__[j][i + 1] = stod(MAFile[k][1]);
         }
     }
