@@ -1132,7 +1132,7 @@ void CompanyInfo::MATable::create_MAtable(CompanyInfo &company) {
             cout << ".";
         }
         vector<vector<string>> MAFile = read_data(MAFilePath[i]);
-        int MAFileSize = MAFile.size();
+        int MAFileSize = (int)MAFile.size();
         if (i == 0 && MAFile[MAFileSize - 1][0] != date__[days__ - 1]) {
             cout << "last date of price file and MA file are different, need to generate new MA file" << endl;
             exit(1);
@@ -2021,6 +2021,10 @@ IRRout::IRRout(double testLength, vector<path> &companyPricePath, vector<string>
     IRROut.close();
     companyPricePath.clear();
 }
+
+class BestHold {
+    
+};
 
 int main(int argc, const char *argv[]) {
     time_point begin = steady_clock::now();
