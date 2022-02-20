@@ -240,10 +240,10 @@ public:
         void record_last_info();
         static bool check_buy_cross(int stockHold, double MAbuy1PreDay, double MAbuy2PreDay, double MAbuy1Today, double MAbuy2Today, int i, int endRow);
         static bool check_sell_cross(int stockHold, double MAsell1PreDay, double MAsell2PreDay, double MAsell1Today, double MAsell2Today, int i, int endRow);
-        void trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord = false);
+        void trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord = false, ofstream *holdOut = nullptr, bool hold = false);
         void print_trade_record(ofstream &out);
         string set_output_filePath(int actualEndRow, int actualStartRow, CompanyInfo &company, string &outputPath, CompanyInfo::MATable &table);
-        void print_train_test_data(CompanyInfo &company_, CompanyInfo::MATable &MAtable_, string trainPath, int actualStartRow_, int actualEndRow_);
+        void print_train_test_data(CompanyInfo &company_, CompanyInfo::MATable &MAtable_, string trainPath, int actualStartRow_, int actualEndRow_, ofstream *holdOut = nullptr, bool hold = false);
         
         Particle(int buy1 = 0, int buy2 = 0, int sell1 = 0, int sell2 = 0, bool on = false);
     };
@@ -297,6 +297,8 @@ public:
     CompanyInfo::TestWindow set_window(string &actualWindow, string &targetWindow, int &windowIndex);
     void check_exception(vector<path> &eachTrainFilePath, CompanyInfo::TestWindow &window);
     void set_test_output_path(string &testFileOutputPath, string &trainFilePath, bool tradition);
+    
+    std::ofstream set_hold_file(const CompanyInfo::TestWindow &window);
     
     CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, bool tradition = false);
 };
@@ -413,6 +415,12 @@ void CalculateTest::set_test_output_path(string &testFileOutputPath, string &tra
     cout << "test " << company_.companyName_ << endl;
 }
 
+std::ofstream CalculateTest::set_hold_file(const CompanyInfo::TestWindow &window) {
+    ofstream holdOut(company_.testHoldPeridFilePath_ + company_.companyName_ + "_" + window.windowName__ + ".csv");
+    holdOut << "Date,Price,Hold,buy,sell" << endl;
+    return holdOut;
+}
+
 CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, bool tradition) : company_(company), table_(table) {
     string trainFilePath;
     string testFileOutputPath;
@@ -422,16 +430,18 @@ CalculateTest::CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, 
         if (actualWindow != "A2A") {
             CompanyInfo::TestWindow window = set_window(actualWindow, targetWindow, windowIndex);
             vector<path> eachTrainFilePath = get_path(trainFilePath + window.windowName__);
+            check_exception(eachTrainFilePath, window);
+            ofstream holdOut = set_hold_file(window);
             for (int intervalIndex = 0, trainFileIndex = 0; intervalIndex < window.interval__.size(); intervalIndex += 2, trainFileIndex++) {
-                check_exception(eachTrainFilePath, window);
                 vector<vector<string>> thisTrainFile = read_data(eachTrainFilePath[trainFileIndex]);
                 p_.initialize();
                 p_.buy1_dec__ = stoi(thisTrainFile[10][1]);
                 p_.buy2_dec__ = stoi(thisTrainFile[11][1]);
                 p_.sell1_dec__ = stoi(thisTrainFile[12][1]);
                 p_.sell2_dec__ = stoi(thisTrainFile[13][1]);
-                p_.print_train_test_data(company_, table_, testFileOutputPath + window.windowName__, window.interval__[intervalIndex], window.interval__[intervalIndex + 1]);
+                p_.print_train_test_data(company_, table_, testFileOutputPath + window.windowName__, window.interval__[intervalIndex], window.interval__[intervalIndex + 1], &holdOut);
             }
+            holdOut.close();
         }
     }
 }
@@ -535,7 +545,7 @@ bool MA_GNQTS::Particle::check_sell_cross(int stockHold, double MAsell1PreDay, d
     return stockHold != 0 && ((MAsell1PreDay >= MAsell2PreDay && MAsell1Today < MAsell2Today) || i == endRow);
 }
 
-void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord) {
+void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &table, bool lastRecord, ofstream *holdOut, bool hold) {
     int stockHold{0};
     if (isRecordOn__) {
         tradeRecord__.push_back(",date,price,preday 1,preday 2,today 1,today 2,stockHold,remain,capital lv\r");
@@ -545,7 +555,9 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
         sellNum__ = 0;
     }
     for (int i = startRow; i <= endRow; i++) {
-            //        holdOut << table.date__[i] << "," << table.price__[i] << ",";
+        if (holdOut != nullptr) {
+            (*holdOut) << table.date__[i] << "," << table.price__[i] << ",";
+        }
         if (check_buy_cross(stockHold, table.MAtable__[i - 1][buy1_dec__], table.MAtable__[i - 1][buy2_dec__], table.MAtable__[i][buy1_dec__], table.MAtable__[i][buy2_dec__], i, endRow) && remain__ >= table.price__[i]) {
             stockHold = floor(remain__ / table.price__[i]);
             if (_pricePath == "price.2") {
@@ -558,7 +570,9 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
             if (isRecordOn__) {
                 record_buy_info(table, i, stockHold);
             }
-                //            holdOut << table.price__[i] << "," << table.price__[i] << endl;
+            if (holdOut != nullptr) {
+                (*holdOut) << table.price__[i] << "," << table.price__[i] << endl;
+            }
         }
         else if (check_sell_cross(stockHold, table.MAtable__[i - 1][sell1_dec__], table.MAtable__[i - 1][sell2_dec__], table.MAtable__[i][sell1_dec__], table.MAtable__[i][sell2_dec__], i, endRow)) {
             if (_pricePath == "price.2") {
@@ -572,14 +586,20 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
             if (isRecordOn__) {
                 record_sell_info(table, i, stockHold);
             }
-                //            holdOut << table.price__[i] << ",," << table.price__[i] << endl;
+            if (holdOut != nullptr) {
+                (*holdOut) << table.price__[i] << ",," << table.price__[i] << endl;
+            }
         }
-            //        else if (stockHold != 0) {
-            //            holdOut << table.price__[i] << endl;
-            //        }
-            //        else if (stockHold == 0) {
-            //            holdOut << endl;
-            //        }
+        else if (stockHold != 0) {
+            if (holdOut != nullptr) {
+                (*holdOut) << table.price__[i] << endl;
+            }
+        }
+        else if (stockHold == 0) {
+            if (holdOut != nullptr) {
+                (*holdOut) << endl;
+            }
+        }
     }
     if (buyNum__ != sellNum__) {
         cout << buyNum__ << "," << sellNum__ << endl;
@@ -1060,11 +1080,11 @@ string MA_GNQTS::Particle::set_output_filePath(int actualEndRow, int actualStart
     return outputPath + table.date__[actualStartRow] + "_" + table.date__[actualEndRow] + ".csv";
 }
 
-void MA_GNQTS::Particle::print_train_test_data(CompanyInfo &company, CompanyInfo::MATable &table, string outputPath, int actualStartRow, int actualEndRow) {
+void MA_GNQTS::Particle::print_train_test_data(CompanyInfo &company, CompanyInfo::MATable &table, string outputPath, int actualStartRow, int actualEndRow, ofstream *holdOut, bool hold) {
     string filePath = set_output_filePath(actualEndRow, actualStartRow, company, outputPath, table);
     isRecordOn__ = true;
     remain__ = TOTAL_CP_LV;
-    trade(actualStartRow, actualEndRow, table);
+    trade(actualStartRow, actualEndRow, table, false, holdOut);
     ofstream out;
     out.open(filePath);
     out << "algo," << _algo[_algoUse] << endl;
