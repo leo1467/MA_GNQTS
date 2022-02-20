@@ -21,7 +21,7 @@ using namespace filesystem;
 #define SELL2_BITS 8
 
 int _mode = 1;
-string _setCompany = "all";
+string _setCompany = "AAPL";
 string _setWindow = "all";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
@@ -179,6 +179,7 @@ public:
     string testFilePath_;
     string trainTraditionFilePath_;
     string testTraditionFilePath_;
+    string testHoldPeridFilePath_;
     
     void store_date_price(path priceFilePath);
     void create_folder();
@@ -544,6 +545,7 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
         sellNum__ = 0;
     }
     for (int i = startRow; i <= endRow; i++) {
+            //        holdOut << table.date__[i] << "," << table.price__[i] << ",";
         if (check_buy_cross(stockHold, table.MAtable__[i - 1][buy1_dec__], table.MAtable__[i - 1][buy2_dec__], table.MAtable__[i][buy1_dec__], table.MAtable__[i][buy2_dec__], i, endRow) && remain__ >= table.price__[i]) {
             stockHold = floor(remain__ / table.price__[i]);
             if (_pricePath == "price.2") {
@@ -556,6 +558,7 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
             if (isRecordOn__) {
                 record_buy_info(table, i, stockHold);
             }
+                //            holdOut << table.price__[i] << "," << table.price__[i] << endl;
         }
         else if (check_sell_cross(stockHold, table.MAtable__[i - 1][sell1_dec__], table.MAtable__[i - 1][sell2_dec__], table.MAtable__[i][sell1_dec__], table.MAtable__[i][sell2_dec__], i, endRow)) {
             if (_pricePath == "price.2") {
@@ -569,7 +572,14 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
             if (isRecordOn__) {
                 record_sell_info(table, i, stockHold);
             }
+                //            holdOut << table.price__[i] << ",," << table.price__[i] << endl;
         }
+            //        else if (stockHold != 0) {
+            //            holdOut << table.price__[i] << endl;
+            //        }
+            //        else if (stockHold == 0) {
+            //            holdOut << endl;
+            //        }
     }
     if (buyNum__ != sellNum__) {
         cout << buyNum__ << "," << sellNum__ << endl;
@@ -758,7 +768,7 @@ void MA_GNQTS::compare(vector<int> &bestVector, vector<int> &worstVector, int bi
             }
             break;
         }
-        case 1:{
+        case 1: {
             compareNew_ += abs(localBest_.buy1_dec__ - localWorst_.buy1_dec__);
             compareNew_ += abs(localBest_.buy2_dec__ - localWorst_.buy2_dec__);
             compareNew_ += abs(localBest_.sell1_dec__ - localWorst_.sell1_dec__);
@@ -1511,6 +1521,7 @@ CompanyInfo::TestWindow::TestWindow(string window, CompanyInfo &company) : windo
 
 void CompanyInfo::create_folder() {
     create_directories(MAType_ + "/" + companyName_);
+    create_directories(testHoldPeridFilePath_);
     for_each_n(_slidingWindows.begin(), _slidingWindows.size(), [&](auto i) {
         create_directories(trainFilePath_ + i);
         create_directories(testFilePath_ + i);
@@ -1806,7 +1817,7 @@ void CompanyInfo::instant_trade(string startDate, string endDate, int buy1, int 
     out.close();
 }
 
-CompanyInfo::CompanyInfo(path filePath, string MAUse) : companyName_(filePath.stem().string()), MAType_(MAUse), MAOutputPath_(MAType_ + "/" + companyName_), trainFilePath_(_outputPath + "/" + companyName_ + "/train/"), testFilePath_(_outputPath + "/" + companyName_ + "/test/"), windowNumber_(int(_slidingWindows.size())), trainTraditionFilePath_(_outputPath + "/" + companyName_ + "/trainTradition/"), testTraditionFilePath_(_outputPath + "/" + companyName_ + "/testTradition/") {
+CompanyInfo::CompanyInfo(path filePath, string MAUse) : companyName_(filePath.stem().string()), MAType_(MAUse), MAOutputPath_(MAType_ + "/" + companyName_), trainFilePath_(_outputPath + "/" + companyName_ + "/train/"), testFilePath_(_outputPath + "/" + companyName_ + "/test/"), windowNumber_(int(_slidingWindows.size())), trainTraditionFilePath_(_outputPath + "/" + companyName_ + "/trainTradition/"), testTraditionFilePath_(_outputPath + "/" + companyName_ + "/testTradition/"), testHoldPeridFilePath_(_outputPath + "/" + companyName_ + "/testHoldPeriod/") {
     if (_outputDecimal2 == 1) {
         MAOutputPath_ = MAType_ + ".2/" + companyName_;
     }
@@ -2022,10 +2033,6 @@ IRRout::IRRout(double testLength, vector<path> &companyPricePath, vector<string>
     companyPricePath.clear();
 }
 
-class BestHold {
-    
-};
-
 int main(int argc, const char *argv[]) {
     time_point begin = steady_clock::now();
     vector<path> companyPricePath = get_path(_pricePath);
@@ -2069,7 +2076,8 @@ int main(int argc, const char *argv[]) {
                     //                company.train("debug", "2020-01-02", "2021-06-30");
                     //                company.train("2012-01-03", "2012-12-31");
                     //                company.instant_trade("2020-01-02", "2021-06-30", 43, 236, 20, 95);
-                company.train("2011-12-01", "2011-12-30");
+                    //                company.train("2011-12-01", "2011-12-30");
+                    //                remove_all(company.testHoldPeridFilePath_);
                 break;
             }
         }
