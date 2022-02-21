@@ -297,8 +297,7 @@ public:
     CompanyInfo::TestWindow set_window(string &actualWindow, string &targetWindow, int &windowIndex);
     void check_exception(vector<path> &eachTrainFilePath, CompanyInfo::TestWindow &window);
     void set_test_output_path(string &testFileOutputPath, string &trainFilePath, bool tradition);
-    
-    std::ofstream set_hold_file(const CompanyInfo::TestWindow &window);
+    ofstream set_hold_file(const CompanyInfo::TestWindow &window);
     
     CalculateTest(CompanyInfo &company, CompanyInfo::MATable &table, string targetWindow, bool tradition = false);
 };
@@ -415,7 +414,7 @@ void CalculateTest::set_test_output_path(string &testFileOutputPath, string &tra
     cout << "test " << company_.companyName_ << endl;
 }
 
-std::ofstream CalculateTest::set_hold_file(const CompanyInfo::TestWindow &window) {
+ofstream CalculateTest::set_hold_file(const CompanyInfo::TestWindow &window) {
     ofstream holdOut(company_.testHoldPeridFilePath_ + company_.companyName_ + "_" + window.windowName__ + ".csv");
     holdOut << "Date,Price,Hold,buy,sell" << endl;
     return holdOut;
