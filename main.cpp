@@ -20,22 +20,22 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 1;
+int _mode = 0;
 string _setCompany = "AAPL";
-string _setWindow = "all";
+string _setWindow = "M2M";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
-int _algoUse = 2;
+int _algoUse = 3;
 string _algo[] = {"QTS", "GQTS", "GNQTS", "KNQTS"};
 
-double _delta = 0.00016;
+double _delta = 0.00128;
 int _expNumber = 50;
 int _generationNumber = 10000;
 double _multiplyUp = 1.01;
 double _multiplyDown = 0.99;
-int _testDeltaLoop = 0;  //normal is 0
-double _testDeltaGap = 0.00001;
-int _compareMode = 1;
+int _testDeltaLoop = 1;  //normal is 0
+double _testDeltaGap = 0.001;
+int _compareMode = 0;
 
 string _testStartYear = "2012";
 string _testEndYear = "2021";
@@ -259,8 +259,8 @@ public:
     CompanyInfo::MATable &table_;
     CompanyInfo &company_;
     double delta_ = _delta;
-    int compareNew_ = 0;
-    int compareOld_ = 0;
+    double compareNew_ = 0;
+    double compareOld_ = 0;
     double multiplyUp_ = _multiplyUp;
     double multiplyDown_ = _multiplyDown;
     
@@ -780,8 +780,23 @@ void MA_GNQTS::QTS() {
 void MA_GNQTS::compare(vector<int> &bestVector, vector<int> &worstVector, int bits, int compareType) {
     switch (compareType) {
         case 0: {
-            for (int i = 0; i < bits; i++) {
-                if (bestVector[i] != worstVector[i]) {
+            for (int i = 0; i < BUY1_BITS; i++) {
+                if (localBest_.buy1_bi__[i] != localWorst_.buy1_bi__[i]) {
+                    compareNew_++;
+                }
+            }
+            for (int i = 0; i < BUY2_BITS; i++) {
+                if (localBest_.buy2_bi__[i] != localWorst_.buy2_bi__[i]) {
+                    compareNew_++;
+                }
+            }
+            for (int i = 0; i < SELL1_BITS; i++) {
+                if (localBest_.sell1_bi__[i] != localWorst_.sell1_bi__[i]) {
+                    compareNew_++;
+                }
+            }
+            for (int i = 0; i < SELL2_BITS; i++) {
+                if (localBest_.sell2_bi__[i] != localWorst_.sell2_bi__[i]) {
                     compareNew_++;
                 }
             }
@@ -801,9 +816,6 @@ void MA_GNQTS::compare(vector<int> &bestVector, vector<int> &worstVector, int bi
 
 void MA_GNQTS::compare_and_multiply() {
     compare(localBest_.buy1_bi__, localWorst_.buy1_bi__, BUY1_BITS, _compareMode);
-    compare(localBest_.buy2_bi__, localWorst_.buy2_bi__, BUY2_BITS, _compareMode);
-    compare(localBest_.sell1_bi__, localWorst_.sell1_bi__, SELL1_BITS, _compareMode);
-    compare(localBest_.sell2_bi__, localWorst_.sell2_bi__, SELL2_BITS, _compareMode);
     if (compareNew_ > compareOld_) {
         delta_ *= multiplyUp_;
     }
