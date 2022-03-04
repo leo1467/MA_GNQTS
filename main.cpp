@@ -416,7 +416,7 @@ void CalculateTest::set_test_output_path(string &testFileOutputPath, string &tra
 
 ofstream CalculateTest::set_hold_file(const CompanyInfo::TestWindow &window) {
     ofstream holdOut(company_.testHoldPeridFilePath_ + company_.companyName_ + "_" + window.windowName__ + ".csv");
-    holdOut << "Date,Price,Hold,buy,sell" << endl;
+    holdOut << "Date,Price,Hold,buy,sell day,sell ma" << endl;
     return holdOut;
 }
 
@@ -586,7 +586,12 @@ void MA_GNQTS::Particle::trade(int startRow, int endRow, CompanyInfo::MATable &t
                 record_sell_info(table, i, stockHold);
             }
             if (holdOut != nullptr) {
-                (*holdOut) << table.price__[i] << ",," << table.price__[i] << endl;
+                if (i == endRow) {
+                    (*holdOut) << table.price__[i] << ",," << table.price__[i] << endl;
+                }
+                else {
+                    (*holdOut) << table.price__[i] << ",,," << table.price__[i] << endl;
+                }
             }
         }
         else if (stockHold != 0) {
