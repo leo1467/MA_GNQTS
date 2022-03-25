@@ -20,15 +20,15 @@ using namespace filesystem;
 #define SELL1_BITS 8
 #define SELL2_BITS 8
 
-int _mode = 0;
+int _mode = 10;
 string _setCompany = "AAPL";
 string _setWindow = "M2M";
 int _MAUse = 0;
 string _MA[] = {"SMA", "WMA", "EMA"};
-int _algoUse = 3;
+int _algoUse = 2;
 string _algo[] = {"QTS", "GQTS", "GNQTS", "KNQTS"};
 
-double _delta = 0.00128;
+double _delta = 0.0002;
 int _expNumber = 50;
 int _generationNumber = 10000;
 double _multiplyUp = 1.01;
@@ -1341,7 +1341,7 @@ void CompanyInfo::TrainWindow::find_W_train(vector<string> trainType, char delim
             }
         }
     }
-    firstTrainEndRow__ = company__.testEndRow_ - 1;
+    firstTrainEndRow__ = company__.testStartRow_ - 1;
     endRow.push_back(firstTrainEndRow__);
     for (int i = company__.testStartRow_, j = 0; i < company__.testEndRow_; i++) {
         smallWeekDay = cal_weekday(company__.date_[i]);
